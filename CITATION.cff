@@ -9,6 +9,14 @@ authors:
 repository-code: "https://github.com/Shawnzhang7829/ShadeWalk"
 version: "1.0.0"
 date-released: "2026-09-10"
+doi: 10.5281/zenodo.22688710
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22688710
+    description: "Zenodo archive of version 1.0.0 (tag v1.0.0)"
+  - type: doi
+    value: 10.5281/zenodo.22688709
+    description: "Zenodo concept DOI (always resolves to the latest version)"
 license: MIT
 keywords:
   - urban shade

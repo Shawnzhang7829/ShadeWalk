@@ -1,5 +1,7 @@
 # ShadeWalk
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22688709.svg)](https://doi.org/10.5281/zenodo.22688709)
+
 Code for **ShadeWalk**: city-scale mapping of artificial shade facilities (arcades / five-foot ways and covered
 linkways), facility-aware hourly shadow modelling, reconstruction of a shade-aware pedestrian network, and
 coolest-route pedestrian-flow mapping for Singapore (with Bologna as a second study city for the arcade detector).
@@ -75,7 +77,18 @@ All Python scripts were checked to be syntactically valid and, except for the pa
 `PROVENANCE.md`, to be identical in logic to the scripts that generated the published results (abstract-syntax-tree
 comparison with string constants masked; comments, docstrings and messages were translated to English).
 
-## Citation
+## Citation and archived version
+
+The code is archived on Zenodo. Version 1.0.0 (this release, tag `v1.0.0`) has the DOI
+[10.5281/zenodo.22688710](https://doi.org/10.5281/zenodo.22688710); the concept DOI
+[10.5281/zenodo.22688709](https://doi.org/10.5281/zenodo.22688709) always resolves to the latest version.
+
+Suggested code-availability statement:
+
+> The code of the ShadeWalk pipeline (shade-facility extraction, facility-aware SOLWEIG-GPU shadow modelling,
+> pedestrian-network reconstruction and coolest-route pedestrian-flow mapping) is openly available at
+> https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (version 1.0.0,
+> https://doi.org/10.5281/zenodo.22688710).
 
 Please cite the ShadeWalk paper (reference to be added on publication) and this repository (`CITATION.cff`).
 The shadow engine builds on SOLWEIG-GPU (Kamath et al., 2026, JOSS) and SOLWEIG (Lindberg et al., 2008); the flow
