@@ -6,6 +6,7 @@ authors:
   - family-names: Zhang
     given-names: Shuyang
     alias: Shawn Zhang
+    orcid: "https://orcid.org/0000-0002-3677-1363"
 repository-code: "https://github.com/Shawnzhang7829/ShadeWalk"
 version: "1.0.1"
 date-released: "2026-09-11"

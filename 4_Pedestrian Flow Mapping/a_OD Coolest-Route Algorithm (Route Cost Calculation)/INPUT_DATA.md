@@ -15,7 +15,7 @@ Data record (input layers referred to below): figshare, https://doi.org/10.6084/
 | Remaining buildings | `step2_building_remain_sg.gpkg` | 103,112 polygons with `height` | Module 3b | web tool 3D buildings |
 | Station ridership | `station_hourly_ridership.gpkg` | 5,921 points (bus stops + MRT / LRT exits), `PT_CODE`, `source`, `n_exits`, hourly `in_/out_/tot_/inj_weekday_HH` and weekend columns, totals | Module 4b (`export_station_hourly.py`) | demand origins (`tot_weekday_14`) |
 | Building weights | `building_hourly_weight.gpkg` | 118,782 polygons, `building_archetype`, `gross_floor_area`, `weight_weekday_HH` (48 hourly columns), peaks and totals | Module 4b (`export_building_hourly.py`) | demand destinations (`weight_weekday_14`), building types in the metrics |
-| Subzone boundaries | `SG_Subzone/SG_subzone boundary 2019_SVY21.shp` | URA Master Plan 2019 subzones | URA | maps, sub-zone experiments |
+| Subzone boundaries | `SG_Subzone/SG_subzone boundary 2019_SVY21.shp` | Master Plan 2019 subzone boundaries, EPSG:3414 | data.gov.sg open data (Master Plan 2019 Subzone Boundary; not part of the data record) | maps, sub-zone experiments |
 | Road section lines | `RoadSectionLine_Mar2026/RoadSectionLine.shp` | LTA road centre lines | LTA DataMall | web tool basemap layer |
 | Tree points | `SG point tree/Point tree.shp` | about 697,000 tree points with size attributes | trees.sg open tree map (web tool visualisation only) | web tool 3D trees |
 | Demo OD pairs | `webapp/dist/demo_scenarios.json` | precomputed demonstration origin-destination pairs (`step4_demo_scenarios.py`) | this module | web tool |
