@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Arcade-positive views, Singapore | `colonnade_sg_v2_positive.csv` (or `arcade_sg_positive.csv` from the reference detector) | `pid, view, viewheading, lon, lat, probe_prob, is_colonnade`; 28,908 rows; lon/lat WGS84 | Module 3a | `step2_project.py sg` |
 | Arcade-positive views, Bologna | `colonnade_bo_v2_positive.csv` | 35,442 rows | Module 3a | `step2_project.py bo` |
-| Building footprints, Singapore | `Shp/SG/SG_Building/SG_Building_SVY21_TH.shp` | 103,113 polygons (Polygon Z), EPSG:3414; height field `height` (m above ground); OSM attributes (`osm_id`, `building`, `levels`, `floorarea_`, ...) | OSM building footprints with heights (authors' base data) | all three scripts (`CFG["sg"]["bld"]`, `hcol="height"`) |
+| Building footprints, Singapore | `Shp/SG/SG_Building/SG_Building_SVY21_TH.shp` | 103,113 polygons (Polygon Z), EPSG:3414; height field `height` (m above ground); OSM attributes (`osm_id`, `building`, `levels`, `floorarea_`, ...) | City Syntax Lab building dataset (OpenStreetMap footprints with heights and functions compiled by the lab; released as `SG_buildings_footprint_height_function.zip` in the data record) | all three scripts (`CFG["sg"]["bld"]`, `hcol="height"`) |
 | Building footprints, Bologna | `Shp/Bologna/c_a944ctc_edifici_pl.geojson` | polygons, EPSG:32632, height field `altezza_gr` | Comune di Bologna open data | `CFG["bo"]` |
 | Building footprints, Guangzhou (optional) | `Shp/GZ/GZ_core_building/GZ_core_building.shp` | EPSG:32649, height field `Height` | Guangzhou core-area buildings | `CFG["gz"]` (Guangzhou was not carried through to the paper) |
 | Conservation areas (legacy merge only) | `MasterPlan2025ConservationAreaBoundaryLayer.geojson` | EPSG:4326 | URA | `step2_merge.py` |

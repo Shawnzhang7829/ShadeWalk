@@ -9,8 +9,8 @@ bounds 2938.6 / 23953.5 / 46938.6 / 50953.5 (E / S / W / N in metres). File name
 
 | Layer | File (Singapore) | Content | Source / how produced |
 |---|---|---|---|
-| DEM | `SUB_SG_Polygon_DEM_1m.tif` | bare-earth elevation, float32, nodata 0 | 1 m terrain model of Singapore from the authors' base dataset (land mask = DEM > 0 is used for statistics) |
-| CDSM | `SUB_SG_Polygon_CDSM_1m.tif` | tree-canopy height above ground | canopy model derived from the Singapore tree inventory / canopy survey; pixels without trees are nodata (-3.4e38) and are cleaned to 0 by `prepare_newarcade.py` -> `SUB_SG_Polygon_CDSMclean_1m.tif` |
+| DEM | `SUB_SG_Polygon_DEM_1m.tif` | bare-earth elevation, float32, nodata 0 | ALOS PALSAR radiometrically terrain-corrected DEM (12.5 m, ASF DAAC), resampled to the 1 m city grid (land mask = DEM > 0 is used for statistics); released as `SG_DEM_1m.tif` in the data record |
+| CDSM | `SUB_SG_Polygon_CDSM_1m.tif` | tree-canopy height above ground | Meta 1 m global canopy height map (Tolan et al., 2024), clipped and aligned to the 1 m grid; pixels without trees are nodata (-3.4e38) and are cleaned to 0 by `prepare_newarcade.py` -> `SUB_SG_Polygon_CDSMclean_1m.tif` (released as `SG_CDSM_tree_height_1m.tif`) |
 | Meteorological forcing | `Forcing_data/S50_Clementi Road*.txt` | hourly UMEP-format forcing (air temperature, RH, pressure, wind, Kdown, ...) | Meteorological Service Singapore station S50 (Clementi Road); five files included in `sample_data/forcing`: 2026-03-01 (paper run), 2026-03-20, 06-21, 09-23, 12-22 (equinox / solstice runs) |
 
 ## B. Vectors from the other modules (rasterised by `scripts/01_prepare_rasters`)
