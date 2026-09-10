@@ -1,0 +1,138 @@
+[
+  {
+    "epoch": 1,
+    "loss": 0.28104683098447797,
+    "val_dice": 0.6956388587019416,
+    "val_iou": 0.5542360399918203,
+    "elapsed_sec": 520.5211534500122,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.6956.pth"
+  },
+  {
+    "epoch": 2,
+    "loss": 0.27435391528144626,
+    "val_dice": 0.6960490916796446,
+    "val_iou": 0.5553938262558443,
+    "elapsed_sec": 552.432137966156,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.6960.pth"
+  },
+  {
+    "epoch": 3,
+    "loss": 0.27520937892138075,
+    "val_dice": 0.7033924880511527,
+    "val_iou": 0.5637332123996197,
+    "elapsed_sec": 512.2172501087189,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.7034.pth"
+  },
+  {
+    "epoch": 4,
+    "loss": 0.2709521609681225,
+    "val_dice": 0.7080894885699782,
+    "val_iou": 0.5701514984185524,
+    "elapsed_sec": 530.5979039669037,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.7081.pth"
+  },
+  {
+    "epoch": 5,
+    "loss": 0.26490840669905785,
+    "val_dice": 0.6987240581925541,
+    "val_iou": 0.5582558435489045,
+    "elapsed_sec": 540.8703439235687,
+    "saved_path": null
+  },
+  {
+    "epoch": 6,
+    "loss": 0.26138659819296683,
+    "val_dice": 0.7099048685151099,
+    "val_iou": 0.5723074284492142,
+    "elapsed_sec": 539.2527046203613,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.7099.pth"
+  },
+  {
+    "epoch": 7,
+    "loss": 0.2757938543131741,
+    "val_dice": 0.7086117878728287,
+    "val_iou": 0.5699152065419065,
+    "elapsed_sec": 538.8684446811676,
+    "saved_path": null
+  },
+  {
+    "epoch": 8,
+    "loss": 0.2628742372893756,
+    "val_dice": 0.6917206124248332,
+    "val_iou": 0.5496522740171318,
+    "elapsed_sec": 545.0831944942474,
+    "saved_path": null
+  },
+  {
+    "epoch": 9,
+    "loss": 0.25032644342667987,
+    "val_dice": 0.7099828194462668,
+    "val_iou": 0.5711703820675962,
+    "elapsed_sec": 542.7165701389313,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.7100.pth"
+  },
+  {
+    "epoch": 10,
+    "loss": 0.24880582254638176,
+    "val_dice": 0.7138224787155678,
+    "val_iou": 0.5763328243160979,
+    "elapsed_sec": 537.9049363136292,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky\\geosam_topolora_autonomous_lean_dice0.7138.pth"
+  },
+  {
+    "epoch": 11,
+    "loss": 0.24459151805627463,
+    "val_dice": 0.7131896093314655,
+    "val_iou": 0.57531212758431,
+    "elapsed_sec": 502.2505433559418,
+    "saved_path": null
+  },
+  {
+    "epoch": 1,
+    "loss": 0.24428036184704835,
+    "val_dice": 0.6951673184593952,
+    "val_iou": 0.55325706456553,
+    "elapsed_sec": 581.2452178001404,
+    "saved_path": null
+  },
+  {
+    "epoch": 2,
+    "loss": 0.24106828295764063,
+    "val_dice": 0.709304092471213,
+    "val_iou": 0.570223697894728,
+    "elapsed_sec": 576.6253118515015,
+    "saved_path": null
+  },
+  {
+    "epoch": 3,
+    "loss": 0.24172380881955718,
+    "val_dice": 0.7057374908846757,
+    "val_iou": 0.5666781033030026,
+    "elapsed_sec": 582.4265942573547,
+    "saved_path": null
+  },
+  {
+    "epoch": 4,
+    "loss": 0.23801653597061292,
+    "val_dice": 0.7088926426550535,
+    "val_iou": 0.570090461203643,
+    "elapsed_sec": 532.8855810165405,
+    "saved_path": null
+  },
+  {
+    "epoch": 5,
+    "loss": 0.2351143670332904,
+    "val_dice": 0.7136596889168721,
+    "val_iou": 0.5762060757532899,
+    "elapsed_sec": 581.0159361362457,
+    "saved_path": null
+  },
+  {
+    "epoch": 6,
+    "loss": 0.2295349273590906,
+    "val_dice": 0.7136479905134441,
+    "val_iou": 0.5757885822291332,
+    "elapsed_sec": 576.7915191650391,
+    "saved_path": null
+  }
+]

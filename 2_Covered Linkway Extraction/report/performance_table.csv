@@ -1,0 +1,9 @@
+stage,Precision,Recall,F1,IoU,clDice,Betti0,polygons,area_km2
+SAM2-UNet+LoRA (model),0.301,0.946,0.457,0.296,0.627,5.4,-,-
+GeoSAM+LoRA no-clDice (model ablation),0.267,0.946,0.416,0.263,0.503,16.66,-,-
+v3 structure (model),0.342,0.932,0.501,0.334,0.635,10.35,-,-
+v3 struct+pednet (island),0.382,0.839,0.525,0.356,0.64,2.78,17209,6.28
+Focal-Tversky (model),0.709,0.718,0.714,0.555,0.782,4.33,-,-
+Tversky raw (island),0.694,0.692,0.693,0.53,0.753,5.83,10064,2.38
+Tversky+pednet (island),0.719,0.655,0.686,0.522,0.745,1.38,6323,1.64
+Tversky+pednet+bridge (FINAL),0.715,0.659,0.686,0.522,0.744,1.43,6148,1.66

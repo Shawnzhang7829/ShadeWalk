@@ -1,0 +1,13 @@
+# Keep line endings exactly as committed (scripts were verified byte-for-byte against the originals)
+* -text
+
+# Binary assets
+*.gpkg binary
+*.pth binary
+*.joblib binary
+*.parquet binary
+*.png binary
+*.svg text
+*.gz binary
+*.tif binary
+*.emf binary

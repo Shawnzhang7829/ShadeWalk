@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local working notes (not part of the release)
+*提示词*.txt
+_manifest.json
+
+# Large intermediate products are distributed separately (see INPUT_DATA.md files)
+output_folder/
+processed_inputs/
+*.tif.aux.xml

@@ -1,0 +1,1880 @@
+# Unified diff of the ShadeWalk solweig_gpu package against upstream SOLWEIG-GPU v1.2.21 (github.com/nvnsudharsan/solweig-gpu).
+# Generated 2026-09-10 with 'diff -u --strip-trailing-cr'. Files not listed are identical to upstream.
+
+--- upstream/solweig_gpu/preprocessor.py
++++ ShadeWalk/solweig_gpu/preprocessor.py
+@@ -103,11 +103,12 @@
+     ds = gdal.Open(ref_file)
+     if ds is None:
+         raise FileNotFoundError(f"Could not open {ref_file}")
++
+     ref_width = ds.RasterXSize
+     ref_height = ds.RasterYSize
+-    ref_gt = ds.GetGeoTransform()  # (originX, pixelWidth, rot, originY, rot, pixelHeight)
++    ref_gt = ds.GetGeoTransform()
+     ref_pixel_width = ref_gt[1]
+-    ref_pixel_height = ref_gt[5]  # typically negative
++    ref_pixel_height = ref_gt[5]
+     ref_crs = ds.GetProjection()
+     ds = None
+ 
+@@ -115,23 +116,40 @@
+         ds = gdal.Open(f)
+         if ds is None:
+             raise FileNotFoundError(f"Could not open {f}")
+-        if ds.RasterXSize != ref_width or ds.RasterYSize != ref_height:
+-            raise ValueError("Error: Raster dimensions do not match.")
++
++        cur_width = ds.RasterXSize
++        cur_height = ds.RasterYSize
++        if cur_width != ref_width or cur_height != ref_height:
++            ds = None
++            raise ValueError(
++                "Error: Raster dimensions do not match.\n"
++                f"Reference: {os.path.basename(ref_file)} -> ({ref_width}, {ref_height})\n"
++                f"Current:   {os.path.basename(f)} -> ({cur_width}, {cur_height})"
++            )
++
+         gt = ds.GetGeoTransform()
+         pixel_width = gt[1]
+         pixel_height = gt[5]
+         if pixel_width != ref_pixel_width or pixel_height != ref_pixel_height:
+-            raise ValueError("Error: Pixel sizes do not match.")
++            ds = None
++            raise ValueError(
++                "Error: Pixel sizes do not match.\n"
++                f"Reference: {os.path.basename(ref_file)} -> ({ref_pixel_width}, {ref_pixel_height})\n"
++                f"Current:   {os.path.basename(f)} -> ({pixel_width}, {pixel_height})"
++            )
++
+         if ds.GetProjection() != ref_crs:
+-            raise ValueError("Error: CRS does not match.")
++            ds = None
++            raise ValueError(
++                "Error: CRS does not match.\n"
++                f"Reference: {os.path.basename(ref_file)}\n"
++                f"Current:   {os.path.basename(f)}"
++            )
+         ds = None
+ 
+     return True
+ 
+-# =============================================================================
+-# Function to tile a raster file into smaller chunks.
+-# =============================================================================
+-def create_tiles(infile, tilesize, overlap, tile_type, preprocess_dir):
++def create_tiles(infile, tilesize, overlap, tile_type, preprocess_dir, reuse_existing=False):
+     """
+     Tile a raster file into smaller chunks.
+ 
+@@ -158,11 +176,19 @@
+     height = ds.RasterYSize
+ 
+     out_folder = os.path.join(preprocess_dir, tile_type)
+-    if not os.path.exists(out_folder):
+-        os.makedirs(out_folder)
+-    else:
++
++    if reuse_existing and os.path.exists(out_folder):
++        existing_tiles = [
++            f for f in os.listdir(out_folder)
++            if f.lower().endswith(".tif") and not f.startswith(".")
++        ]
++        if existing_tiles:
++            print(f"Reusing existing tiles for {tile_type} in {out_folder}")
++            return
++
++    if os.path.exists(out_folder):
+         shutil.rmtree(out_folder)
+-        os.makedirs(out_folder)
++    os.makedirs(out_folder)
+ 
+     if tilesize >= width and tilesize >= height:
+         outfile = os.path.join(out_folder, f"{tile_type}_0_0.tif")
+@@ -844,19 +870,80 @@
+ 
+     dataset.close()
+     print(f"All raster extents processed and metfiles saved in {metfiles_folder}")
+-    
++
++def filter_met_file_by_time(source_met_file, start_time=None, end_time=None):
++    """
++    Read a SOLWEIG met txt file and filter rows by datetime range.
++
++    Assumptions:
++    - First row is header
++    - File is whitespace-delimited
++    - First 4 columns are: Year, DOY, Hour, Minute
++    """
++    with open(source_met_file, "r", encoding="utf-8") as f:
++        lines = f.readlines()
++
++    if len(lines) < 2:
++        raise ValueError(f"Met file is empty or invalid: {source_met_file}")
++
++    header_line = lines[0].rstrip("\n")
++
++    df = pd.read_csv(
++        source_met_file,
++        sep=r"\s+",
++        skiprows=1,
++        header=None,
++        engine="python"
++    )
++
++    if df.empty:
++        raise ValueError(f"No met data found in: {source_met_file}")
++
++    if df.shape[1] < 4:
++        raise ValueError(
++            "Met file must have at least 4 columns: Year DOY Hour Minute"
++        )
++
++    year = df.iloc[:, 0].astype(int)
++    doy = df.iloc[:, 1].astype(int)
++    hour = df.iloc[:, 2].astype(int)
++    minute = df.iloc[:, 3].astype(int)
++
++    base_date = pd.to_datetime(year.astype(str), format="%Y")
++    dt_index = (
++        base_date
++        + pd.to_timedelta(doy - 1, unit="D")
++        + pd.to_timedelta(hour, unit="h")
++        + pd.to_timedelta(minute, unit="m")
++    )
++
++    mask = pd.Series(True, index=df.index)
++
++    if start_time is not None:
++        start_dt = pd.to_datetime(start_time)
++        mask &= dt_index >= start_dt
++
++    if end_time is not None:
++        end_dt = pd.to_datetime(end_time)
++        mask &= dt_index <= end_dt
++
++    filtered_df = df.loc[mask].copy()
++
++    if filtered_df.empty:
++        raise ValueError(
++            f"No rows remain after filtering met file.\n"
++            f"start_time={start_time}, end_time={end_time}"
++        )
++
++    return header_line, filtered_df
++
+ # =============================================================================
+ # Function to process own met file: copies the source met file into new files
+ # renaming each copy based on the numeric suffix extracted from .tif files.
+ # =============================================================================
+-def create_met_files(base_path, source_met_file, preprocess_dir):
++def create_met_files(base_path, source_met_file, preprocess_dir, start_time=None, end_time=None):
+     """
+-    Copy a given met file to multiple outputs based on the raster tile filenames.
+-
+-    Parameters:
+-        base_path (str): Base directory containing input rasters.
+-        source_met_file (str): Path to user-provided met file.
+-        preprocess_dir (str): Directory for preprocessing outputs (pre_processing_outputs).
++    Create met files for each tile, filtering the source met file by time range first.
+     """
+     raster_folder = os.path.join(preprocess_dir, 'Building_DSM')
+     target_folder = os.path.join(preprocess_dir, 'metfiles')
+@@ -866,7 +953,13 @@
+     else:
+         shutil.rmtree(target_folder)
+         os.makedirs(target_folder)
+-    
++
++    header_line, filtered_df = filter_met_file_by_time(
++        source_met_file,
++        start_time=start_time,
++        end_time=end_time
++    )
++
+     for file in os.listdir(raster_folder):
+         if file.lower().endswith('.tif'):
+             name_without_ext = os.path.splitext(file)[0]
+@@ -875,17 +968,28 @@
+                 digits = name_without_ext[len(prefix):]
+                 new_filename = f'metfile_{digits}.txt'
+                 target_met_file = os.path.join(target_folder, new_filename)
+-                shutil.copy(source_met_file, target_met_file)
+-                print(f"Copied to {target_met_file}")
++
++                with open(target_met_file, "w", encoding="utf-8") as f:
++                    f.write(header_line + "\n")
++
++                filtered_df.to_csv(
++                    target_met_file,
++                    mode="a",
++                    sep=" ",
++                    header=False,
++                    index=False
++                )
++
++                print(f"Created filtered met file: {target_met_file}")
+ 
+ # =============================================================================
+ # Main function: checks rasters, creates tiles, and creates metfiles using either a
+ # user-supplied met file or a netCDF file. Only the parameters required for the chosen
+ # method need to be provided.
+ # =============================================================================
+-def ppr(base_path, building_dsm_filename, dem_filename, trees_filename, landcover_filename,
+-         tile_size, overlap, selected_date_str, use_own_met,start_time=None, end_time=None, data_source_type=None, data_folder=None,
+-         own_met_file=None, preprocess_dir=None):
++def ppr(base_path, building_dsm_filename, dem_filename, trees_filename, ldsm_filename=None, arcade_filename=None, arcade_base_filename=None, building_remain_filename=None, landcover_filename=None, wallheight_filename=None, wallaspect_filename=None,
++         tile_size=3600, overlap=20, selected_date_str=None, use_own_met=True, start_time=None, end_time=None, data_source_type=None, data_folder=None,
++         own_met_file=None, preprocess_dir=None, reuse_tiles=False):
+     """
+     Preprocessing routine to validate raster files, generate tiles, and prepare metfiles for SOLWEIG.
+ 
+@@ -913,37 +1017,82 @@
+     building_dsm_path = os.path.join(base_path, building_dsm_filename)
+     dem_path = os.path.join(base_path, dem_filename)
+     trees_path = os.path.join(base_path, trees_filename)
+-    if landcover_filename is not None:
+-        landcover_path = os.path.join(base_path, landcover_filename)
++    ldsm_path = os.path.join(base_path, ldsm_filename) if ldsm_filename is not None else None
++    adsm_path = os.path.join(base_path, arcade_filename) if arcade_filename is not None else None
++    adsmb_path = os.path.join(base_path, arcade_base_filename) if arcade_base_filename is not None else None
++    if (adsm_path is None) != (adsmb_path is None):
++        raise ValueError("arcade_filename and arcade_base_filename must be provided together.")
++    bremain_path = os.path.join(base_path, building_remain_filename) if building_remain_filename is not None else None
++    landcover_path = os.path.join(base_path, landcover_filename) if landcover_filename is not None else None
++
++    wallheight_path = (
++        os.path.join(base_path, wallheight_filename)
++        if wallheight_filename not in [None, False, ""]
++        else None
++    )
++    wallaspect_path = (
++        os.path.join(base_path, wallaspect_filename)
++        if wallaspect_filename not in [None, False, ""]
++        else None
++    )
++
++    if (wallheight_path is None) != (wallaspect_path is None):
++        raise ValueError(
++            "wallheight_filename and wallaspect_filename must be provided together, "
++            "or both set to False."
++        )
++    if wallheight_path is not None and wallaspect_path is not None:
++        print("User-provided wall height / wall aspect rasters detected; tiles will be created directly for walls/ and aspect/.")
+ 
+     # Check that all rasters have matching dimensions, pixel size, and CRS.
+     try:
+-        if landcover_filename is not None:
+-            check_rasters([building_dsm_path, dem_path, trees_path, landcover_path]) 
+-        else:
+-            check_rasters([building_dsm_path, dem_path, trees_path])
+-            
++        raster_list = [building_dsm_path, dem_path, trees_path]
++        if ldsm_path is not None:
++            raster_list.append(ldsm_path)
++        if adsm_path is not None:
++            raster_list.append(adsm_path)
++            raster_list.append(adsmb_path)
++        if bremain_path is not None:
++            raster_list.append(bremain_path)
++        if landcover_path is not None:
++            raster_list.append(landcover_path)
++        if wallheight_path is not None:
++            raster_list.append(wallheight_path)
++        if wallaspect_path is not None:
++            raster_list.append(wallaspect_path)
++
++        check_rasters(raster_list)
++
+     except ValueError as error:
+-        print(error)
+-        exit(1)
++        raise ValueError(
++            "Raster validation failed in ppr().\n"
++            f"{error}\n"
++            "Please align Building_DSM / DEM / Trees / LDSM / Landcover / wallheight / wallaspect "
++            "to the same extent, rows, cols, pixel size, and CRS."
++        )
++
++    rasters = {
++        "Building_DSM": building_dsm_path,
++        "DEM": dem_path,
++        "Trees": trees_path
++    }
++    if ldsm_path is not None:
++        rasters["LDSM"] = ldsm_path
++    if adsm_path is not None:
++        rasters["ADSM"] = adsm_path
++        rasters["ADSMB"] = adsmb_path
++    if bremain_path is not None:
++        rasters["BREMAIN"] = bremain_path
++    if landcover_path is not None:
++        rasters["Landcover"] = landcover_path
++    if wallheight_path is not None:
++        rasters["walls"] = wallheight_path
++    if wallaspect_path is not None:
++        rasters["aspect"] = wallaspect_path
+ 
+-    if landcover_filename is not None:
+-        rasters = {
+-            "Building_DSM": building_dsm_path,
+-            "DEM": dem_path,
+-            "Trees": trees_path,
+-            "Landcover": landcover_path
+-        }
+-    else: 
+-        rasters = {
+-            "Building_DSM": building_dsm_path,
+-            "DEM": dem_path,
+-            "Trees": trees_path   
+-        }  
+-        
+     for tile_type, raster in rasters.items():
+         print(f"Creating tiles for {tile_type}...")
+-        create_tiles(raster, tile_size, overlap, tile_type, preprocess_dir)
++        create_tiles(raster, tile_size, overlap, tile_type, preprocess_dir,reuse_existing=reuse_tiles)
+     
+     # For metfiles processing, we use the DEM tiles folder.
+     dem_tiles_folder = os.path.join(preprocess_dir, "DEM")
+@@ -953,7 +1102,13 @@
+         if own_met_file is None:
+             print("Error: Please provide the path to your own met file.")
+             exit(1)
+-        create_met_files(base_path, own_met_file, preprocess_dir)
++        create_met_files(
++            base_path,
++            own_met_file,
++            preprocess_dir,
++            start_time=start_time,
++            end_time=end_time
++        )
+     else:
+         # Ensure all additional required parameters are provided.
+         if data_folder is None or data_source_type is None or start_time is None or end_time is None:
+--- upstream/solweig_gpu/solweig.py
++++ ShadeWalk/solweig_gpu/solweig.py
+@@ -1083,9 +1083,15 @@
+     templastfabovea = torch.zeros((sizex, sizey), device=device)
+     templastgabovea = torch.zeros((sizex, sizey), device=device)
+     bushplant = (bush > 1).float()
++
+     sh = torch.zeros((sizex, sizey), device=device)
+     vbshvegsh = torch.zeros((sizex, sizey), device=device)
+     vegsh = torch.zeros((sizex, sizey), device=device) + bushplant
++
++    overlap_mask = torch.zeros((sizex, sizey), device=device)
++    # vegsh_raw_accum: whether this pixel has ever been hit by vegetation shadow during the whole shadow propagation; it only records "has this pixel ever been swept by vegetation shadow" and takes no part in the later overlap clean-up
++    vegsh_raw_accum = bushplant.clone()
++
+     f = a 
+     shvoveg = vegdem 
+     wallbol = (walls > 0).float()
+@@ -1154,12 +1160,24 @@
+         lastfabovea = templastfabovea > a
+         lastgabovea = templastgabovea > a
+         dzprev = dz
++
+         vegsh2 = fabovea + gabovea + lastfabovea.float() + lastgabovea.float()
+         vegsh2 = torch.where(vegsh2 == 4, torch.tensor(0.0, device=device), vegsh2)
+         vegsh2 = torch.where(vegsh2 > 0, torch.tensor(1.0, device=device), vegsh2)
+ 
++        # Accumulate the "raw vegetation shadow", unaffected by the later overlap clean-up
++        vegsh_raw_accum = torch.maximum(vegsh_raw_accum, vegsh2)
++
++        # The vegetation shadow used for output is still accumulated with the original logic
+         vegsh = torch.maximum(vegsh, vegsh2)
+-        vegsh = torch.where(vegsh * sh > 0, torch.tensor(0.0, device=device), vegsh)
++
++        # overlap should be based on the "raw accumulated vegetation shadow", not on the already-cleaned vegsh
++        overlap_step = ((vegsh_raw_accum > 0) & (sh > 0)).float()
++        overlap_mask = torch.maximum(overlap_mask, overlap_step)
++
++        # The output vegsh continues with the overlap-removal logic
++        vegsh = torch.where(overlap_step > 0, torch.tensor(0.0, device=device), vegsh)
++
+         vbshvegsh = vbshvegsh + vegsh
+ 
+         index += 1
+@@ -1199,9 +1217,9 @@
+     wallshve = torch.where(wallshve > walls, walls, wallshve)
+ 
+     del fabovea,gabovea,lastfabovea,lastgabovea,vegsh2
+-    del tempvegdem,tempvegdem2,templastfabovea,templastgabovea,shvoveg,wallbol
++    del tempvegdem,tempvegdem2,templastfabovea,templastgabovea,shvoveg,wallbol,vegsh_raw_accum
+ 
+-    return vegsh, sh, vbshvegsh, wallsh, wallsun, wallshve, facesh, facesun
++    return vegsh, sh, vbshvegsh, overlap_mask, wallsh, wallsun, wallshve, facesh, facesun
+ 
+ 
+ def Perez_v3(zen, azimuth, radD, radI, jday, patchchoice, patch_option):
+@@ -1903,6 +1921,189 @@
+ 
+     return Least, Lsouth, Lwest, Lnorth
+ 
++def _combine_shadow_with_transmissivity(sh, vegsh, psi):
++    """Combine building shadow and semi-transparent volume shadow."""
++    return sh - (1 - vegsh) * (1 - psi)
++
++
++def _opaque_layer_shadow(dsm, obj_top, obj_bottom, azimuth_val, altitude_val, scale,
++                         amaxvalue_val, bush, walls, dirwalls, obj_psi, device):
++    """Compute shadow from an additional canopy-like layer such as LDSM shelter roofs."""
++    zero = torch.zeros_like(dsm, device=device)
++    if (obj_top is None) or (obj_bottom is None):
++        return None, None, zero
++
++    objvegsh, objsh, _, obj_overlap_mask, _, _, _, _, _ = shadowingfunction_wallheight_23(
++        dsm,
++        obj_top,
++        obj_bottom,
++        azimuth_val,
++        altitude_val,
++        scale,
++        amaxvalue_val,
++        bush,
++        walls,
++        dirwalls * np.pi / 180.
++    )
++    obj_shadow = _combine_shadow_with_transmissivity(objsh, objvegsh, obj_psi)
++    return obj_shadow, objvegsh, obj_overlap_mask
++
++
++def Solweig_shadow_calc(
++    dsm, scale, rows, cols,
++    altitude, azimuth,
++    usevegdem,
++    vegdem, vegdem2, psi,
++    amaxvalue, bush,
++    walls, dirwalls,
++    use_ldem=0,
++    ldem=None,
++    ldem2=None,
++    lpsi=0.0,
++    ldsm_bush=None,
++    use_adem=0,
++    adem=None,
++    adem2=None,
++    apsi=0.0,
++    adsm_bush=None,
++    bremain=None,
++):
++    device = dsm.device if isinstance(dsm, torch.Tensor) else torch.device(
++        'cuda' if torch.cuda.is_available() else 'cpu'
++    )
++
++    altitude_val = altitude.item() if isinstance(altitude, torch.Tensor) else float(altitude)
++    azimuth_val = azimuth.item() if isinstance(azimuth, torch.Tensor) else float(azimuth)
++    amaxvalue_val = amaxvalue.item() if isinstance(amaxvalue, torch.Tensor) else float(amaxvalue)
++
++    if altitude_val <= 0:
++        zero = torch.zeros((rows, cols), device=device)
++        urban_shadow_category = torch.zeros((rows, cols), dtype=torch.uint8, device=device)
++        return zero, zero, zero, zero, urban_shadow_category, zero, zero, zero, zero
++
++    urban_shadow_category = torch.zeros((rows, cols), dtype=torch.uint8, device=device)
++    overlap_mask = torch.zeros((rows, cols), device=device)
++    ldsmsh = torch.ones((rows, cols), device=device)
++    shelter_overlap_mask = torch.zeros((rows, cols), device=device)
++    arcsh = torch.ones((rows, cols), device=device)
++
++    if usevegdem == 1:
++        vegsh, sh, vbshvegsh, overlap_mask, wallsh, wallsun, wallshve, facesh, facesun = shadowingfunction_wallheight_23(
++            dsm,
++            vegdem,
++            vegdem2,
++            azimuth_val,
++            altitude_val,
++            scale,
++            amaxvalue_val,
++            bush,
++            walls,
++            dirwalls * np.pi / 180.
++        )
++        shadow = _combine_shadow_with_transmissivity(sh, vegsh, psi)
++    else:
++        sh, wallsh, wallsun, facesh, facesun = shadowingfunction_wallheight_13(
++            dsm,
++            azimuth_val,
++            altitude_val,
++            scale,
++            walls,
++            dirwalls * np.pi / 180.
++        )
++
++        vegsh = torch.ones((rows, cols), device=device)
++        vbshvegsh = torch.ones((rows, cols), device=device)
++        wallshve = torch.zeros((rows, cols), device=device)
++        shadow = sh
++
++    if use_ldem == 1 and ldem is not None and ldem2 is not None:
++        shelter_bush = ldsm_bush if ldsm_bush is not None else torch.zeros_like(dsm, device=device)
++        shelter_shadow, ldsmsh, shelter_overlap_mask = _opaque_layer_shadow(
++            dsm, ldem, ldem2, azimuth_val, altitude_val, scale, amaxvalue_val,
++            shelter_bush, walls, dirwalls, lpsi, device
++        )
++        if shelter_shadow is not None:
++            shadow = torch.minimum(shadow, shelter_shadow)
++
++    # Arcade / five-foot way: floating opaque box hugging the building
++    # (open passage below arc_h, solid from arc_h up to the upper-floor roof).
++    # Same canopy-style (23) treatment as LDSM, with its own top/bottom rasters.
++    arc_overlap_mask = torch.zeros((rows, cols), device=device)
++    if use_adem == 1 and adem is not None and adem2 is not None:
++        arcade_bush = adsm_bush if adsm_bush is not None else torch.zeros_like(dsm, device=device)
++        arcade_shadow, arcade_sh, arcade_overlap = _opaque_layer_shadow(
++            dsm, adem, adem2, azimuth_val, altitude_val, scale, amaxvalue_val,
++            arcade_bush, walls, dirwalls, apsi, device
++        )
++        if arcade_shadow is not None:
++            shadow = torch.minimum(shadow, arcade_shadow)
++            arcsh = arcade_sh
++            arc_overlap_mask = arcade_overlap
++
++    building_shadow_bool = sh < 0.5
++    vegetation_shadow_bool = vegsh < 0.5
++    shelter_shadow_bool = ldsmsh < 0.5
++    # arcade per spec (2026-06-13 final): blocked by the box, INCLUDING pixels the
++    # building also shadows (a walkway pixel under the box base stays "arcade" even
++    # when a long building shadow covers it too). The off-strip part of the box
++    # shadow is remapped to the building side after assignment.
++    arcade_shadow_bool = (arcsh < 0.5) | (arc_overlap_mask > 0.5)
++
++    building_tree_overlap = overlap_mask > 0.5
++    building_ldsm_overlap = shelter_overlap_mask > 0.5
++    veg_incl = vegetation_shadow_bool | building_tree_overlap     # veg incl. bldg-overlap
++    ldsm_incl = shelter_shadow_bool | building_ldsm_overlap       # ldsm incl. bldg-overlap
++
++    na = ~arcade_shadow_bool
++    building_only_bool = building_shadow_bool & (~vegetation_shadow_bool) & (~shelter_shadow_bool) & na
++    vegetation_only_bool = vegetation_shadow_bool & (~building_shadow_bool) & (~shelter_shadow_bool) & na
++    tree_building_bool = building_tree_overlap & (~shelter_shadow_bool) & na
++    ldsm_only_bool = shelter_shadow_bool & (~building_shadow_bool) & (~vegetation_shadow_bool) & na
++    building_ldsm_bool = building_ldsm_overlap & (~vegetation_shadow_bool) & na
++    vegetation_ldsm_bool = vegetation_shadow_bool & shelter_shadow_bool & (~building_shadow_bool) & na
++    all_overlap_bool = building_shadow_bool & vegetation_shadow_bool & shelter_shadow_bool & na
++
++    # Arcade classes (exclusive arcade only; on these pixels building shadow is
++    # absent by construction, so veg/ldsm inclusion reduces to plain veg/ldsm).
++    arcade_only_bool = arcade_shadow_bool & (~veg_incl) & (~ldsm_incl)
++    vegetation_arcade_bool = arcade_shadow_bool & veg_incl & (~ldsm_incl)
++    ldsm_arcade_bool = arcade_shadow_bool & ldsm_incl & (~veg_incl)
++    vegetation_ldsm_arcade_bool = arcade_shadow_bool & veg_incl & ldsm_incl
++
++    urban_shadow_category[building_only_bool] = 1
++    urban_shadow_category[vegetation_only_bool] = 2
++    urban_shadow_category[tree_building_bool] = 3
++    urban_shadow_category[ldsm_only_bool] = 4
++    urban_shadow_category[building_ldsm_bool] = 5
++    urban_shadow_category[vegetation_ldsm_bool] = 6
++    urban_shadow_category[all_overlap_bool] = 7
++    urban_shadow_category[arcade_only_bool] = 8
++    urban_shadow_category[vegetation_arcade_bool] = 9
++    urban_shadow_category[ldsm_arcade_bool] = 10
++    urban_shadow_category[vegetation_ldsm_arcade_bool] = 11
++
++    # Per spec (2026-06-13): arcade classes are ONLY the walkway strip shaded by
++    # the box base (ADSMB). The box's cast shadow on the street counts as
++    # building-side shadow -> remap off-strip arcade pixels to 1/3/5/7.
++    if use_adem == 1 and adem is not None:
++        off_strip = ~(adem > 0)
++        for old_c, new_c in ((8, 1), (9, 3), (10, 5), (11, 7)):
++            urban_shadow_category[(urban_shadow_category == old_c) & off_strip] = new_c
++        # Per spec (2026-06-13 #2): building-side shadow directly under the arcade
++        # strip also counts as arcade shelter -> remap into the family (combos kept).
++        on_strip = adem > 0
++        for old_c, new_c in ((1, 8), (3, 9), (5, 10), (7, 11)):
++            urban_shadow_category[(urban_shadow_category == old_c) & on_strip] = new_c
++
++    # Building footprint (building_remain): pixels covered by the building base
++    # itself are not shadow — class 12 overrides every shadow class.
++    if bremain is not None:
++        urban_shadow_category[bremain > 0.5] = 12
++
++    return (
++        shadow, sh, vegsh, vbshvegsh, urban_shadow_category,
++        wallsh, wallsun, wallshve, facesun,
++    )
+ 
+ def Solweig_2022a_calc(i, dsm, scale, rows, cols, svf, svfN, svfW, svfE, svfS, svfveg, svfNveg, svfEveg, svfSveg,
+                        svfWveg, svfaveg, svfEaveg, svfSaveg, svfWaveg, svfNaveg, vegdem, vegdem2, albedo_b, absK, absL,
+@@ -1910,7 +2111,7 @@
+                        landcover, lc_grid, dectime, altmax, dirwalls, walls, cyl, elvis, Ta, RH, radG, radD, radI, P,
+                        amaxvalue, bush, Twater, TgK, Tstart, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST,
+                        TmaxLST_wall, first, second, svfalfa, svfbuveg, firstdaytime, timeadd, timestepdec, Tgmap1,
+-                       Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N, CI, TgOut1, diffsh, shmat, vegshmat, vbshvegshmat, anisotropic_sky, asvf, patch_option):
++                       Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N, CI, TgOut1, diffsh, shmat, vegshmat, vbshvegshmat, anisotropic_sky, asvf, patch_option, use_ldem=0, ldem=None, ldem2=None, lpsi=0.0, ldsm_bush=None):
+     """
+     Main SOLWEIG 2022a calculation kernel - integrates all radiation and temperature calculations.
+     
+@@ -2034,14 +2235,26 @@
+ 
+         # Shadow  images
+         if usevegdem == 1:
+-            vegsh, sh, _, wallsh, wallsun, wallshve, _, facesun = shadowingfunction_wallheight_23(dsm, vegdem, vegdem2,
+-                                        azimuth.item(), altitude.item(), scale, amaxvalue.item(), bush, walls, dirwalls * np.pi / 180.)
+-            shadow = sh - (1 - vegsh) * (1 - psi)
++            vegsh, sh, _, _, wallsh, wallsun, wallshve, _, facesun = shadowingfunction_wallheight_23(
++                dsm, vegdem, vegdem2,
++                azimuth.item(), altitude.item(), scale,
++                amaxvalue.item(), bush, walls, dirwalls * np.pi / 180.
++            )
++            shadow = _combine_shadow_with_transmissivity(sh, vegsh, psi)
+         else:
+             sh, wallsh, wallsun, facesh, facesun = shadowingfunction_wallheight_13(dsm, azimuth.item(), altitude.item(), scale,
+                                                                                    walls, dirwalls * np.pi / 180.)
+             shadow = sh
+ 
++        if use_ldem == 1 and ldem is not None and ldem2 is not None:
++            shelter_bush = ldsm_bush if ldsm_bush is not None else torch.zeros_like(dsm, device=device)
++            shelter_shadow, _, _ = _opaque_layer_shadow(
++                dsm, ldem, ldem2, azimuth.item(), altitude.item(), scale,
++                amaxvalue.item(), shelter_bush, walls, dirwalls, lpsi, device
++            )
++            if shelter_shadow is not None:
++                shadow = torch.minimum(shadow, shelter_shadow)
++
+         # # # Surface temperature parameterisation during daytime # # # #
+         Tgamp = TgK * altmax + Tstart # Fixed 2021
+         Tgampwall = TgK_wall * altmax + Tstart_wall
+--- upstream/solweig_gpu/solweig_gpu.py
++++ ShadeWalk/solweig_gpu/solweig_gpu.py
+@@ -1,16 +1,5 @@
+-#SOLWEIG-GPU: GPU-accelerated SOLWEIG model for urban thermal comfort simulation
+-#Copyright (C) 2022–2025 Harsh Kamath and Naveen Sudharsan
+ 
+-#This program is free software: you can redistribute it and/or modify
+-#it under the terms of the GNU General Public License as published by
+-#the Free Software Foundation, either version 3 of the License, or
+-#(at your option) any later version.
+-
+-#This program is distributed in the hope that it will be useful,
+-#but WITHOUT ANY WARRANTY; without even the implied warranty of
+-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+-#GNU General Public License for more details.
+-from typing import Optional
++from typing import Optional, Union
+ 
+ def thermal_comfort(
+     base_path,
+@@ -18,13 +7,19 @@
+     building_dsm_filename='Building_DSM.tif',
+     dem_filename='DEM.tif',
+     trees_filename='Trees.tif',
+-    landcover_filename: Optional[str] = None, 
+-    tile_size=3600, 
+-    overlap = 20,
++    ldsm_filename: Optional[str] = None,
++    arcade_filename: Optional[str] = None,
++    arcade_base_filename: Optional[str] = None,
++    building_remain_filename: Optional[str] = None,
++    landcover_filename: Optional[str] = None,
++    wallheight_filename: Union[str, bool] = None,
++    wallaspect_filename: Union[str, bool] = None,
++    tile_size=3600,
++    overlap=20,
+     use_own_met=True,
+-    start_time=None, 
+-    end_time=None, 
+-    data_source_type=None, 
++    start_time=None,
++    end_time=None,
++    data_source_type=None,
+     data_folder=None,
+     own_met_file=None,
+     save_tmrt=True,
+@@ -33,117 +28,198 @@
+     save_kdown=False,
+     save_lup=False,
+     save_ldown=False,
+-    save_shadow=False
++    save_shadow=False,
++    shadow_category=False,
++    only_shadow=False,
++    reuse_tiles=False,
++    reuse_wall_aspect=False,
++    skip_sparse_tiles=True,
++    min_building_fraction=0.01,
++    min_tree_fraction=0.01,
++    min_ldsm_fraction=0.0,
++    canopy_height_ratio=0.23,
++    ldsm_bottom_height_ratio=0.90,
++    shelter_transmittance=0.0,
++    arcade_transmittance=0.0,
+ ):
+     """
+     Main function to compute urban thermal comfort using the SOLWEIG-GPU model.
+-    
+-    This function orchestrates the complete workflow:
+-    1. Preprocesses input rasters (tiling, validation)
+-    2. Processes meteorological data (ERA5, WRF, or custom)
+-    3. Calculates wall heights and aspects (parallel CPU)
+-    4. Computes shadows, radiation, and SVF (GPU-accelerated)
+-    5. Calculates UTCI thermal comfort index
+-    6. Saves outputs as georeferenced rasters
+-    
+-    Args:
+-        base_path (str): Base directory for output_folder/ and processed_inputs/; also used to resolve relative raster paths. For outputs elsewhere, set this to the desired output directory and pass complete paths for the raster arguments.
+-        selected_date_str (str): Simulation date in format 'YYYY-MM-DD'
+-        building_dsm_filename (str): Building+terrain DSM path or filename (relative to base_path). Default: 'Building_DSM.tif'. Can be a complete path if rasters live elsewhere.
+-        dem_filename (str): DEM path or filename (relative to base_path). Default: 'DEM.tif'
+-        trees_filename (str): Vegetation DSM path or filename (relative to base_path). Default: 'Trees.tif'
+-        landcover_filename (str, optional): Land cover raster path or filename. Default: None
+-        tile_size (int): Tile size in pixels. Default: 3600. Adjust based on GPU RAM.
+-        overlap (int): Overlap between tiles in pixels. Default: 20. Used for shadow transfer.
+-        use_own_met (bool): Use custom meteorological file. Default: True
+-        start_time (str, optional): Start datetime 'YYYY-MM-DD HH:MM:SS' (UTC for ERA5/WRF)
+-        end_time (str, optional): End datetime 'YYYY-MM-DD HH:MM:SS' (UTC for ERA5/WRF)
+-        data_source_type (str, optional): 'ERA5' or 'wrfout' if not using own met file
+-        data_folder (str, optional): Folder containing ERA5/WRF NetCDF files
+-        own_met_file (str, optional): Path to custom meteorological text file
+-        save_tmrt (bool): Save mean radiant temperature output. Default: True
+-        save_svf (bool): Save sky view factor output. Default: False
+-        save_kup (bool): Save upward shortwave radiation. Default: False
+-        save_kdown (bool): Save downward shortwave radiation. Default: False
+-        save_lup (bool): Save upward longwave radiation. Default: False
+-        save_ldown (bool): Save downward longwave radiation. Default: False
+-        save_shadow (bool): Save shadow maps. Default: False
+-    
+-    Returns:
+-        None: Outputs are saved to `{base_path}/output_folder/` directory
+-    
+-    Output Structure:
+-        - {base_path}/processed_inputs/ - All preprocessing files
+-          - Building_DSM/ - Preprocessing tiles
+-          - DEM/ - Preprocessing tiles
+-          - Trees/ - Preprocessing tiles
+-          - metfiles/ - Meteorological files
+-          - walls/ - Wall height rasters
+-          - aspect/ - Wall aspect rasters
+-          - Outfile.nc - Processed NetCDF (if using ERA5/WRF)
+-        - output_folder/{tile_key}/ - One folder per tile (tile_key e.g. "0_0", "1000_0")
+-          - UTCI_{tile_key}.tif - Universal Thermal Climate Index (always saved)
+-          - TMRT_{tile_key}.tif - Mean radiant temperature (if save_tmrt=True)
+-          - SVF_{tile_key}.tif - Sky view factor (if save_svf=True)
+-          - Kup_{tile_key}.tif - Upward shortwave (if save_kup=True)
+-          - Kdown_{tile_key}.tif - Downward shortwave (if save_kdown=True)
+-          - Lup_{tile_key}.tif - Upward longwave (if save_lup=True)
+-          - Ldown_{tile_key}.tif - Downward longwave (if save_ldown=True)
+-          - Shadow_{tile_key}.tif - Shadow maps (if save_shadow=True)
+-    
+-    Notes:
+-        - Automatically uses GPU if available, falls back to CPU
+-        - Processes tiles in parallel for large domains
+-        - UTC to local time conversion handled automatically
+-        - Multi-band rasters: one band per hour
+-    
+-    Example:
+-        >>> from solweig_gpu import thermal_comfort
+-        >>> thermal_comfort(
+-        ...     base_path='/path/to/input',
+-        ...     selected_date_str='2020-08-13',
+-        ...     tile_size=1000,
+-        ...     overlap=100,
+-        ...     use_own_met=True,
+-        ...     own_met_file='/path/to/met.txt'
+-        ... )
+-    
+-    Raises:
+-        ValueError: If input rasters have mismatched dimensions, CRS, or pixel sizes
+-        FileNotFoundError: If the required input files are missing
++
++    Supports optional LDSM input for urban shelter/shading structures. When
++    `ldsm_filename` is provided, the function expects preprocessing to create
++    `processed_inputs/LDSM/` tiles and forwards `ldsm_path` plus LDSM-related
++    parameters into `compute_utci()`.
++
++    Notes
++    -----
++    - If your `preprocessor.ppr()` has already been extended to accept
++      `ldsm_filename`, this function will pass it automatically.
++    - If `ldsm_filename` is provided but `ppr()` does not support it yet,
++      this function raises a clear error telling you to update the preprocessor.
+     """
+ 
+-    from .preprocessor import ppr
+-    from .utci_process import compute_utci, map_files_by_key
+-    from .walls_aspect import run_parallel_processing
++    import inspect
+     import os
+     import numpy as np
+     import torch
+-    # Create preprocessing outputs directory
++    from osgeo import gdal
++
++    from .preprocessor import ppr
++    from .utci_process import compute_utci, map_files_by_key
++    from .walls_aspect import run_parallel_processing
++
++    def _coverage_fraction(arr):
++        if arr is None:
++            return 0.0
++        total = arr.size
++        if total == 0:
++            return 0.0
++        return float(np.count_nonzero(arr > 0)) / float(total)
++
++    def _read_fraction(path, label):
++        if path is None:
++            return 0.0
++        ds = gdal.Open(path)
++        if ds is None:
++            raise FileNotFoundError(f"Could not open {label} tile: {path}")
++        arr = ds.GetRasterBand(1).ReadAsArray()
++        ds = None
++        return _coverage_fraction(arr)
++
++    def _is_sparse_tile(
++        building_dsm_path,
++        tree_path,
++        ldsm_path=None,
++        min_building_fraction=0.01,
++        min_tree_fraction=0.01,
++        min_ldsm_fraction=0.0,
++    ):
++        building_fraction = _read_fraction(building_dsm_path, "Building_DSM")
++        tree_fraction = _read_fraction(tree_path, "Trees")
++        ldsm_fraction = _read_fraction(ldsm_path, "LDSM") if ldsm_path is not None else 0.0
++
++        sparse = (
++            (building_fraction < min_building_fraction)
++            and (tree_fraction < min_tree_fraction)
++            and (ldsm_fraction < min_ldsm_fraction)
++        )
++        return sparse, building_fraction, tree_fraction, ldsm_fraction
++
+     preprocess_dir = os.path.join(base_path, "processed_inputs")
+     os.makedirs(preprocess_dir, exist_ok=True)
+ 
+-    ppr(
+-        base_path, building_dsm_filename, dem_filename, trees_filename,
+-        landcover_filename, tile_size, overlap, selected_date_str, use_own_met,
+-        start_time, end_time, data_source_type, data_folder, own_met_file,
+-         preprocess_dir=preprocess_dir
++    ppr_kwargs = dict(
++        base_path=base_path,
++        building_dsm_filename=building_dsm_filename,
++        dem_filename=dem_filename,
++        trees_filename=trees_filename,
++        landcover_filename=landcover_filename,
++        wallheight_filename=wallheight_filename,
++        wallaspect_filename=wallaspect_filename,
++        tile_size=tile_size,
++        overlap=overlap,
++        selected_date_str=selected_date_str,
++        use_own_met=use_own_met,
++        start_time=start_time,
++        end_time=end_time,
++        data_source_type=data_source_type,
++        data_folder=data_folder,
++        own_met_file=own_met_file,
++        preprocess_dir=preprocess_dir,
++        reuse_tiles=reuse_tiles,
+     )
+ 
++    ppr_sig = inspect.signature(ppr)
++
++    if ldsm_filename is not None:
++        if "ldsm_filename" in ppr_sig.parameters:
++            ppr_kwargs["ldsm_filename"] = ldsm_filename
++        else:
++            raise TypeError(
++                "ldsm_filename was provided, but preprocessor.ppr() does not accept "
++                "'ldsm_filename' yet. Please update preprocessor.py as well."
++            )
++
++    if (arcade_filename is None) != (arcade_base_filename is None):
++        raise ValueError("arcade_filename and arcade_base_filename must be provided together.")
++    if arcade_filename is not None:
++        if "arcade_filename" in ppr_sig.parameters:
++            ppr_kwargs["arcade_filename"] = arcade_filename
++            ppr_kwargs["arcade_base_filename"] = arcade_base_filename
++        else:
++            raise TypeError(
++                "arcade_filename was provided, but preprocessor.ppr() does not accept "
++                "'arcade_filename' yet. Please update preprocessor.py as well."
++            )
++
++    if building_remain_filename is not None:
++        if "building_remain_filename" in ppr_sig.parameters:
++            ppr_kwargs["building_remain_filename"] = building_remain_filename
++        else:
++            raise TypeError(
++                "building_remain_filename was provided, but preprocessor.ppr() does not accept "
++                "'building_remain_filename' yet. Please update preprocessor.py as well."
++            )
++
++    if "wallheight_filename" not in ppr_sig.parameters or "wallaspect_filename" not in ppr_sig.parameters:
++        raise TypeError(
++            "thermal_comfort() now passes 'wallheight_filename' and 'wallaspect_filename', "
++            "but preprocessor.ppr() has not been updated yet. Please update preprocessor.py as well."
++        )
++
++    ppr(**ppr_kwargs)
++
++    skipped_tiles_file = os.path.join(preprocess_dir, "skipped_sparse_tiles.txt")
++    with open(skipped_tiles_file, "w", encoding="utf-8") as f:
++        if ldsm_filename is None:
++            f.write("tile_key,building_fraction,tree_fraction\n")
++        else:
++            f.write("tile_key,building_fraction,tree_fraction,ldsm_fraction\n")
++
+     base_output_path = os.path.join(base_path, "output_folder")
+     inputMet = os.path.join(preprocess_dir, "metfiles")
+     building_dsm_dir = os.path.join(preprocess_dir, "Building_DSM")
+     tree_dir = os.path.join(preprocess_dir, "Trees")
++    ldsm_dir = os.path.join(preprocess_dir, "LDSM") if ldsm_filename is not None else None
++    adsm_dir = os.path.join(preprocess_dir, "ADSM") if arcade_filename is not None else None
++    adsmb_dir = os.path.join(preprocess_dir, "ADSMB") if arcade_filename is not None else None
++    bremain_dir = os.path.join(preprocess_dir, "BREMAIN") if building_remain_filename is not None else None
+     dem_dir = os.path.join(preprocess_dir, "DEM")
+     landcover_dir = os.path.join(preprocess_dir, "Landcover") if landcover_filename is not None else None
+     walls_dir = os.path.join(preprocess_dir, "walls")
+     aspect_dir = os.path.join(preprocess_dir, "aspect")
+ 
+-    run_parallel_processing(building_dsm_dir, walls_dir, aspect_dir)
++    use_input_wallheight = wallheight_filename not in [None, False, ""]
++    use_input_wallaspect = wallaspect_filename not in [None, False, ""]
++
++    if use_input_wallheight != use_input_wallaspect:
++        raise ValueError(
++            "wallheight_filename and wallaspect_filename must be provided together, "
++            "or both set to False."
++        )
++
++    if use_input_wallheight and use_input_wallaspect:
++        print("Using user-provided wall height / wall aspect rasters; skipping wall/aspect computation.")
++    else:
++        run_parallel_processing(
++            building_dsm_dir,
++            tree_dir,
++            walls_dir,
++            aspect_dir,
++            skip_existing=reuse_wall_aspect,
++            skip_sparse_tiles=skip_sparse_tiles,
++            min_building_fraction=min_building_fraction,
++            min_tree_fraction=min_tree_fraction
++        )
++
+     print("Running Solweig ...")
+ 
+     building_dsm_map = map_files_by_key(building_dsm_dir, ".tif")
+     tree_map = map_files_by_key(tree_dir, ".tif")
++    ldsm_map = map_files_by_key(ldsm_dir, ".tif") if ldsm_dir else {}
++    adsm_map = map_files_by_key(adsm_dir, ".tif") if adsm_dir else {}
++    adsmb_map = map_files_by_key(adsmb_dir, ".tif") if adsmb_dir else {}
++    bremain_map = map_files_by_key(bremain_dir, ".tif") if bremain_dir else {}
+     dem_map = map_files_by_key(dem_dir, ".tif")
+     landcover_map = map_files_by_key(landcover_dir, ".tif") if landcover_dir else {}
+     walls_map = map_files_by_key(walls_dir, ".tif")
+@@ -153,46 +229,130 @@
+     common_keys = set(building_dsm_map) & set(tree_map) & set(dem_map) & set(met_map)
+     if landcover_dir:
+         common_keys &= set(landcover_map)
++    if ldsm_dir:
++        common_keys &= set(ldsm_map)
++    if adsm_dir:
++        common_keys &= set(adsm_map)
++        common_keys &= set(adsmb_map)
++    if bremain_dir:
++        common_keys &= set(bremain_map)
+ 
+     def _numeric_key(k: str):
+-        """Sort tiles by numeric coordinates (x, y)."""
+-        x, y = k.split("_")
+-        return (int(x), int(y))
++        try:
++            x_str, y_str = k.split("_")
++            return (int(x_str), int(y_str))
++        except Exception:
++            return (10**18, 10**18)
+ 
+-    for key in sorted(common_keys, key=_numeric_key):
++    sorted_keys = sorted(common_keys, key=_numeric_key)
+ 
+-        building_dsm_path = building_dsm_map[key]
++    for key in sorted_keys:
++        print(f"Processing tile: {key}")
++
++        dsm_path = building_dsm_map[key]
+         tree_path = tree_map[key]
++        ldsm_path = ldsm_map.get(key) if ldsm_dir else None
++        adsm_path = adsm_map.get(key) if adsm_dir else None
++        adsmb_path = adsmb_map.get(key) if adsm_dir else None
++        bremain_path = bremain_map.get(key) if bremain_dir else None
+         dem_path = dem_map[key]
+-        landcover_path = landcover_map.get(key) if landcover_dir else None
++        met_path = met_map[key]
+         walls_path = walls_map.get(key)
+         aspect_path = aspect_map.get(key)
+-        met_file_path = met_map[key]
++        landcover_path = landcover_map.get(key) if landcover_dir else None
++
++        if skip_sparse_tiles:
++            sparse, building_fraction, tree_fraction, ldsm_fraction = _is_sparse_tile(
++                dsm_path,
++                tree_path,
++                ldsm_path=ldsm_path,
++                min_building_fraction=min_building_fraction,
++                min_tree_fraction=min_tree_fraction,
++                min_ldsm_fraction=min_ldsm_fraction,
++            )
++            if sparse:
++                if ldsm_filename is None:
++                    print(
++                        f"Skipping sparse tile in main simulation: {key} "
++                        f"(building={building_fraction:.2%}, tree={tree_fraction:.2%})"
++                    )
++                    with open(skipped_tiles_file, "a", encoding="utf-8") as f:
++                        f.write(f"{key},{building_fraction:.6f},{tree_fraction:.6f}\n")
++                else:
++                    print(
++                        f"Skipping sparse tile in main simulation: {key} "
++                        f"(building={building_fraction:.2%}, tree={tree_fraction:.2%}, "
++                        f"ldsm={ldsm_fraction:.2%})"
++                    )
++                    with open(skipped_tiles_file, "a", encoding="utf-8") as f:
++                        f.write(
++                            f"{key},{building_fraction:.6f},{tree_fraction:.6f},"
++                            f"{ldsm_fraction:.6f}\n"
++                        )
++                continue
++
++        if walls_path is None or aspect_path is None:
++            print(f"Skipping tile {key}: missing wall or aspect file.")
++            continue
+ 
+         output_folder = os.path.join(base_output_path, key)
+         os.makedirs(output_folder, exist_ok=True)
+ 
+-        met_file_data = np.loadtxt(met_file_path, skiprows=1, delimiter=' ')
++        met_file_data = np.loadtxt(met_path, skiprows=1)
+ 
+-        compute_utci(
+-            building_dsm_path,
+-            tree_path,
+-            dem_path,
+-            walls_path,
+-            aspect_path,
+-            landcover_path,
+-            met_file_data,
+-            output_folder,
+-            key,  
+-            selected_date_str,
++        compute_kwargs = dict(
++            building_dsm_path=dsm_path,
++            tree_path=tree_path,
++            dem_path=dem_path,
++            walls_path=walls_path,
++            aspect_path=aspect_path,
++            landcover_path=landcover_path,
++            met_file_data=met_file_data,
++            output_path=output_folder,
++            number=key,
++            selected_date_str=selected_date_str,
+             save_tmrt=save_tmrt,
+             save_svf=save_svf,
+             save_kup=save_kup,
+             save_kdown=save_kdown,
+             save_lup=save_lup,
+             save_ldown=save_ldown,
+-            save_shadow=save_shadow
++            save_shadow=save_shadow,
++            shadow_category=shadow_category,
++            only_shadow=only_shadow,
++            canopy_height_ratio=canopy_height_ratio,
++            ldsm_bottom_height_ratio=ldsm_bottom_height_ratio,
++            shelter_transmittance=shelter_transmittance,
+         )
+ 
+-        # Free GPU memory between tiles
+-        torch.cuda.empty_cache()
++        compute_sig = inspect.signature(compute_utci)
++        if "ldsm_path" in compute_sig.parameters:
++            compute_kwargs["ldsm_path"] = ldsm_path
++        elif ldsm_path is not None:
++            raise TypeError(
++                "ldsm_filename was provided, but utci_process.compute_utci() does not accept "
++                "'ldsm_path' yet. Please update utci_process.py as well."
++            )
++
++        if "adsm_path" in compute_sig.parameters:
++            compute_kwargs["adsm_path"] = adsm_path
++            compute_kwargs["adsm_base_path"] = adsmb_path
++            compute_kwargs["arcade_transmittance"] = arcade_transmittance
++        elif adsm_path is not None:
++            raise TypeError(
++                "arcade_filename was provided, but utci_process.compute_utci() does not accept "
++                "'adsm_path' yet. Please update utci_process.py as well."
++            )
++
++        if "bremain_path" in compute_sig.parameters:
++            compute_kwargs["bremain_path"] = bremain_path
++        elif bremain_path is not None:
++            raise TypeError(
++                "building_remain_filename was provided, but utci_process.compute_utci() does not accept "
++                "'bremain_path' yet. Please update utci_process.py as well."
++            )
++
++        compute_utci(**compute_kwargs)
++
++        if torch.cuda.is_available():
++            torch.cuda.empty_cache()
+--- upstream/solweig_gpu/utci_process.py
++++ ShadeWalk/solweig_gpu/utci_process.py
+@@ -31,7 +31,7 @@
+ from .Tgmaps_v1 import Tgmaps_v1
+ from .sun_position import Solweig_2015a_metdata_noload
+ from .shadow import svf_calculator, create_patches
+-from .solweig import Solweig_2022a_calc, clearnessindex_2013b
++from .solweig import Solweig_2022a_calc, clearnessindex_2013b, Solweig_shadow_calc
+ from .calculate_utci import utci_calculator
+ import os
+ import re
+@@ -64,7 +64,7 @@
+ 
+ firstdayleaf = 97
+ lastdayleaf = 300
+-conifer_bool = False
++conifer_bool = True
+ 
+ def load_raster_to_tensor(dem_path):
+     """
+@@ -157,8 +157,11 @@
+     return number
+ 
+ 
+-def compute_utci(building_dsm_path, tree_path, dem_path, walls_path, aspect_path, landcover_path, met_file, 
+-                output_path,number,selected_date_str,save_tmrt=False,save_svf=False, save_kup=False,save_kdown=False,save_lup=False,save_ldown=False,save_shadow=False):
++def compute_utci(building_dsm_path, tree_path, dem_path, walls_path, aspect_path, landcover_path, met_file_data, 
++                output_path,number,selected_date_str,save_tmrt=False,save_svf=False, save_kup=False,save_kdown=False,save_lup=False,save_ldown=False,save_shadow=False,shadow_category=False,only_shadow=False,
++                ldsm_path=None, canopy_height_ratio=0.25, ldsm_bottom_height_ratio=0.80, shelter_transmittance=0.0,
++                adsm_path=None, adsm_base_path=None, arcade_transmittance=0.0,
++                bremain_path=None):
+     """
+     Compute UTCI and related thermal comfort outputs for a single tile.
+     
+@@ -172,7 +175,7 @@
+         walls_path (str): Path to wall height raster
+         aspect_path (str): Path to wall aspect raster  
+         landcover_path (str): Path to land cover raster (can be None)
+-        met_file (str): Path to meteorological forcing file
++        met_file_data (np.ndarray): Loaded meteorological forcing data
+         output_path (str): Directory for saving output rasters
+         number (str): Tile identifier (e.g., "0_0")
+         selected_date_str (str): Date string (YYYY-MM-DD)
+@@ -198,7 +201,41 @@
+     temp2, dataset3 = load_raster_to_tensor(dem_path)
+     walls, dataset4 = load_raster_to_tensor(walls_path)
+     dirwalls, dataset5 = load_raster_to_tensor(aspect_path)
+- 
++
++    use_ldsm = int(ldsm_path is not None)
++    if use_ldsm:
++        ldsm_h, dataset_ldsm = load_raster_to_tensor(ldsm_path)
++        ldsm_h[ldsm_h < 0.] = 0.
++    else:
++        ldsm_h = torch.zeros_like(temp1)
++        dataset_ldsm = None
++
++    # Arcade / five-foot way: top = roof of the floors above the walkway (above ground),
++    # base = arc_h clearance height (above ground). Building DSM must be pre-carved
++    # to ground level on the arcade strip pixels (model B).
++    use_adsm = int(adsm_path is not None and adsm_base_path is not None)
++    if use_adsm:
++        adsm_h, dataset_adsm = load_raster_to_tensor(adsm_path)
++        adsm_h[adsm_h < 0.] = 0.
++        adsm_b, dataset_adsmb = load_raster_to_tensor(adsm_base_path)
++        adsm_b[adsm_b < 0.] = 0.
++    else:
++        adsm_h = None
++        adsm_b = None
++        dataset_adsm = None
++        dataset_adsmb = None
++
++    # Building footprint (building_remain): 0/1 mask of pixels covered by the
++    # building base itself (footprint minus arcade strip). Classified as 12
++    # (not shadow) with top priority; shadow rasters are untouched.
++    use_bremain = int(bremain_path is not None)
++    if use_bremain:
++        bremain, dataset_bremain = load_raster_to_tensor(bremain_path)
++        bremain[bremain < 0.] = 0.
++    else:
++        bremain = None
++        dataset_bremain = None
++
+     # Added
+     landcover = 0
+ 
+@@ -280,16 +317,43 @@
+     local_dt = local_tz.localize(base_date)
+     utc = local_dt.utcoffset().total_seconds() / 3600
+     print(f"[INFO] Timezone: {timezone_name}, UTC offset: {utc} hours")
+-    YYYY, altitude, azimuth, zen, jday, leafon, dectime, altmax = Solweig_2015a_metdata_noload(met_file, location, utc)
++    YYYY, altitude, azimuth, zen, jday, leafon, dectime, altmax = Solweig_2015a_metdata_noload(met_file_data, location, utc)
+     temp1[temp1 < 0.] = 0.
+     vegdem = temp1 + temp2
+-    vegdem2 = torch.add(temp1 * 0.25, temp2)
++    vegdem2 = torch.add(temp1 * canopy_height_ratio, temp2)
+     bush = torch.logical_not(vegdem2 * vegdem) * vegdem
+     vegdsm = temp1 + a
+     vegdsm[vegdsm == a] = 0
+-    vegdsm2 = temp1 * 0.25 + a
++    vegdsm2 = temp1 * canopy_height_ratio + a
+     vegdsm2[vegdsm2 == a] = 0
+-    amaxvalue = torch.maximum(a.max(), vegdem.max())
++
++    if use_ldsm:
++        ldsm_dem = ldsm_h + temp2
++        ldsm_dem2 = ldsm_h * ldsm_bottom_height_ratio + temp2
++        ldsm_bush = torch.zeros_like(ldsm_dem, device=device)
++        ldsm_dsm = ldsm_h + a
++        ldsm_dsm[ldsm_dsm == a] = 0
++        ldsm_dsm2 = ldsm_h * ldsm_bottom_height_ratio + a
++        ldsm_dsm2[ldsm_dsm2 == a] = 0
++        amaxvalue = torch.maximum(torch.maximum(a.max(), vegdem.max()), ldsm_dem.max())
++    else:
++        ldsm_dem = None
++        ldsm_dem2 = None
++        ldsm_dsm = None
++        ldsm_dsm2 = None
++        ldsm_bush = None
++        amaxvalue = torch.maximum(a.max(), vegdem.max())
++    if use_adsm:
++        adsm_dsm = adsm_h + a
++        adsm_dsm[adsm_dsm == a] = 0
++        adsm_dsm2 = adsm_b + a
++        adsm_dsm2[adsm_dsm2 == a] = 0
++        adsm_bush = torch.zeros_like(a, device=device)
++        amaxvalue = torch.maximum(amaxvalue, adsm_dsm.max())
++    else:
++        adsm_dsm = None
++        adsm_dsm2 = None
++        adsm_bush = None
+     buildings = a - temp2
+     buildings[buildings < 2.] = 1.
+     buildings[buildings >= 2.] = 0.
+@@ -326,7 +390,7 @@
+         TmaxLST_wall = 15.
+     # Added
+     
+-    transVeg = 3. / 100.
++    transVeg = 10. / 100.
+     # landcover = 1 # Modified
+     if landcover == 1:
+         lcgrid = lcgrid_torch
+@@ -334,16 +398,16 @@
+         lcgrid = False
+     anisotropic_sky = 1
+     patch_option = 2
+-    DOY = torch.tensor(met_file[:, 1], device=device)
+-    hours = torch.tensor(met_file[:, 2], device=device)
+-    minu = torch.tensor(met_file[:, 3], device=device)
+-    Ta = torch.tensor(met_file[:, 11], device=device)
+-    RH = torch.tensor(met_file[:, 10], device=device)
+-    radG = torch.tensor(met_file[:, 14], device=device)
+-    radD = torch.tensor(met_file[:, 21], device=device)
+-    radI = torch.tensor(met_file[:, 22], device=device)
+-    P = torch.tensor(met_file[:, 12], device=device)
+-    Ws = torch.tensor(met_file[:, 9], device=device)
++    DOY = torch.tensor(met_file_data[:, 1], device=device)
++    hours = torch.tensor(met_file_data[:, 2], device=device)
++    minu = torch.tensor(met_file_data[:, 3], device=device)
++    Ta = torch.tensor(met_file_data[:, 11], device=device)
++    RH = torch.tensor(met_file_data[:, 10], device=device)
++    radG = torch.tensor(met_file_data[:, 14], device=device)
++    radD = torch.tensor(met_file_data[:, 21], device=device)
++    radI = torch.tensor(met_file_data[:, 22], device=device)
++    P = torch.tensor(met_file_data[:, 12], device=device)
++    Ws = torch.tensor(met_file_data[:, 9], device=device)
+     # Prepare leafon based on vegetation type
+     if conifer_bool:
+         leafon = torch.ones((1, DOY.shape[0]), device=device)
+@@ -356,6 +420,8 @@
+         leafon[0, leaf_bool] = 1
+     psi = leafon * transVeg
+     psi[leafon == 0] = 0.5
++    shelter_psi = torch.tensor(shelter_transmittance, device=device).float()
++    arcade_psi = torch.tensor(arcade_transmittance, device=device).float()
+     Twater = []
+     height = 1.1
+     height = torch.tensor(height, device=device)
+@@ -371,6 +437,130 @@
+     timeadd = 0.
+     firstdaytime = 1.
+     start_time = time.time()
++
++    # ==========================================================
++    # only_shadow: skip SVF / Tmrt / UTCI and only compute shadow
++    # ==========================================================
++    if only_shadow:
++        Shadow_all = []
++        Shadow_category_all = []
++
++        for i in np.arange(0, Ta.__len__()):
++            psi_i = psi[0][i]
++
++            shadow_out, sh, vegsh, vbshvegsh, urban_shadow_category, \
++            wallsh, wallsun, wallshve, facesun = Solweig_shadow_calc(
++                dsm=a,
++                scale=scale,
++                rows=rows,
++                cols=cols,
++                altitude=altitude[0][i],
++                azimuth=azimuth[0][i],
++                usevegdem=usevegdem,
++                vegdem=vegdsm,
++                vegdem2=vegdsm2,
++                psi=psi_i,
++                amaxvalue=amaxvalue,
++                bush=bush,
++                walls=walls,
++                dirwalls=dirwalls,
++                use_ldem=use_ldsm,
++                ldem=ldsm_dsm,
++                ldem2=ldsm_dsm2,
++                lpsi=shelter_psi,
++                ldsm_bush=ldsm_bush,
++                use_adem=use_adsm,
++                adem=adsm_dsm,
++                adem2=adsm_dsm2,
++                apsi=arcade_psi,
++                adsm_bush=adsm_bush,
++                bremain=bremain
++            )
++
++            Shadow_all.append(shadow_out.detach().cpu().numpy())
++
++            if shadow_category:
++                Shadow_category_all.append(urban_shadow_category.detach().cpu().numpy())
++
++        Shadow_all = np.array(Shadow_all)
++
++        if shadow_category:
++            Shadow_category_all = np.array(Shadow_category_all)
++
++        driver = gdal.GetDriverByName('GTiff')
++        out_file_path_op = os.path.join(output_path, f'Shadow_{number}.tif')
++        num_bands_op = Shadow_all.shape[0]
++
++        out_dataset_op = driver.Create(
++            out_file_path_op, cols, rows, num_bands_op, gdal.GDT_Float32
++        )
++        out_dataset_op.SetGeoTransform(dataset.GetGeoTransform())
++        out_dataset_op.SetProjection(dataset.GetProjection())
++
++        for band in range(num_bands_op):
++            out_band = out_dataset_op.GetRasterBand(band + 1)
++            out_band.WriteArray(Shadow_all[band])
++            out_band.FlushCache()
++
++            hour = int(hours[band].cpu().item())
++            minute = int(minu[band].cpu().item())
++            timestamp = base_date.replace(hour=hour, minute=minute).isoformat()
++            out_band.SetMetadata({'Time': timestamp})
++
++        out_dataset_op = None
++
++        if shadow_category:
++            out_file_path_cat = os.path.join(output_path, f'Category_{number}.tif')
++            num_bands_cat = Shadow_category_all.shape[0]
++
++            out_dataset_cat = driver.Create(
++                out_file_path_cat, cols, rows, num_bands_cat, gdal.GDT_Byte
++            )
++            out_dataset_cat.SetGeoTransform(dataset.GetGeoTransform())
++            out_dataset_cat.SetProjection(dataset.GetProjection())
++
++            for band in range(num_bands_cat):
++                out_band = out_dataset_cat.GetRasterBand(band + 1)
++                out_band.WriteArray(Shadow_category_all[band])
++                out_band.FlushCache()
++
++                hour = int(hours[band].cpu().item())
++                minute = int(minu[band].cpu().item())
++                timestamp = base_date.replace(hour=hour, minute=minute).isoformat()
++                out_band.SetMetadata({
++                    'Time': timestamp,
++                    'Category_0': 'sunlit',
++                    'Category_1': 'building_shadow_only',
++                    'Category_2': 'vegetation_shadow_only',
++                    'Category_3': 'building_and_vegetation_shadow',
++                    'Category_4': 'ldsm_shadow_only',
++                    'Category_5': 'building_and_ldsm_shadow',
++                    'Category_6': 'vegetation_and_ldsm_shadow',
++                    'Category_7': 'building_vegetation_and_ldsm_shadow',
++                    'Category_8': 'arcade_strip_shaded_by_box_base',
++                    'Category_9': 'vegetation_and_arcade_shadow',
++                    'Category_10': 'ldsm_and_arcade_shadow',
++                    'Category_11': 'vegetation_ldsm_and_arcade_shadow',
++                    'Category_12': 'building_footprint_not_shadow'
++                })
++
++            out_dataset_cat = None
++
++        dataset = None
++        dataset2 = None
++        dataset3 = None
++        dataset4 = None
++        dataset5 = None
++        dataset_ldsm = None
++        dataset_adsm = None
++        dataset_adsmb = None
++        dataset_bremain = None
++
++        end_time = time.time()
++        time_taken = end_time - start_time
++        print(f"Time taken to execute tile {number} (shadow only): {time_taken:.2f} seconds")
++        return
++
+     # Calculate SVF and related parameters (remains unchanged)
+     svf, svfaveg, svfE, svfEaveg, svfEveg, svfN, svfNaveg, svfNveg, svfS, svfSaveg, svfSveg, svfveg, svfW, svfWaveg, svfWveg, vegshmat, vbshvegshmat, shmat, svftotal = svf_calculator(patch_option, amaxvalue, a, vegdsm, vegdsm2, bush, scale)
+     svfbuveg = svf - (1.0 - svfveg) * (1.0 - transVeg)
+@@ -381,6 +571,7 @@
+     tmp = svf + svfveg - 1.0
+     tmp[tmp < 0.0] = 0.0
+     svfalfa = torch.asin(torch.exp(torch.log(1.0 - tmp) / 2.0))
++
+     # Prepare lists to store results for all time steps
+     UTCI_all  = []
+     TMRT_all  = []
+@@ -389,7 +580,9 @@
+     Lup_all   = []
+     Ldown_all = []
+     Shadow_all= []
++    Shadow_category_all = []
+     CI = 1.0
++
+     for i in np.arange(0, Ta.__len__()):
+         if landcover == 1:
+             if ((dectime[i] - np.floor(dectime[i]))) == 0 or (i == 0):
+@@ -407,13 +600,16 @@
+                     CI = 1.
+             else:
+                 CI = 1.
++
+         Tmrt, Kdown, Kup, Ldown, Lup, Tg, ea, esky, I0, CI, shadow, firstdaytime, timestepdec, timeadd, \
+         Tgmap1, Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N, Keast, Ksouth, Kwest, Knorth, Least, Lsouth, Lwest, Lnorth, \
+         KsideI, TgOut1, TgOut, radIout, radDout, Lside, Lsky_patch_characteristics, CI_Tg, CI_TgG, KsideD, dRad, Kside = Solweig_2022a_calc(
+             i, a, scale, rows, cols, svf, svfN, svfW, svfE, svfS, svfveg, svfNveg, svfEveg, svfSveg, svfWveg, svfaveg, svfEaveg, svfSaveg, svfWaveg, svfNaveg, vegdsm, vegdsm2, albedo_b, absK, absL, ewall, Fside, Fup, Fcyl,
+             altitude[0][i], azimuth[0][i], zen[0][i], jday[0][i], usevegdem, onlyglobal, buildings, location, psi[0][i], landcover, lcgrid, dectime[i], altmax[0][i], dirwalls, walls, cyl, elvis, Ta[i], RH[i], radG[i], radD[i], radI[i], P[i],
+             amaxvalue, bush, Twater, TgK, Tstart, alb_grid, emis_grid, TgK_wall, Tstart_wall, TmaxLST, TmaxLST_wall, first, second, svfalfa, svfbuveg, firstdaytime, timeadd, timestepdec, Tgmap1, Tgmap1E, Tgmap1S, Tgmap1W, Tgmap1N,
+-            CI, TgOut1, diffsh, shmat, vegshmat, vbshvegshmat, anisotropic_sky, asvf, patch_option)
++            CI, TgOut1, diffsh, shmat, vegshmat, vbshvegshmat, anisotropic_sky, asvf, patch_option,
++            use_ldem=use_ldsm, ldem=ldsm_dem, ldem2=ldsm_dem2, lpsi=shelter_psi, ldsm_bush=ldsm_bush)
++        
+         # Create matrices for meteorological parameters for the current time step
+         Ta_mat = torch.zeros((rows, cols), device=device) + Ta[i]
+         RH_mat = torch.zeros((rows, cols), device=device) + RH[i]
+@@ -430,6 +626,17 @@
+         Lup_all.append(Lup.cpu().numpy())
+         Ldown_all.append(Ldown.cpu().numpy())
+         Shadow_all.append(shadow.cpu().numpy())
++        if shadow_category:
++            _, _, _, _, urban_shadow_category, _, _, _, _ = Solweig_shadow_calc(
++                dsm=a, scale=scale, rows=rows, cols=cols,
++                altitude=altitude[0][i], azimuth=azimuth[0][i],
++                usevegdem=usevegdem, vegdem=vegdsm, vegdem2=vegdsm2, psi=psi[0][i],
++                amaxvalue=amaxvalue, bush=bush, walls=walls, dirwalls=dirwalls,
++                use_ldem=use_ldsm, ldem=ldsm_dsm, ldem2=ldsm_dsm2, lpsi=shelter_psi, ldsm_bush=ldsm_bush,
++                use_adem=use_adsm, adem=adsm_dsm, adem2=adsm_dsm2, apsi=arcade_psi, adsm_bush=adsm_bush,
++                bremain=bremain
++            )
++            Shadow_category_all.append(urban_shadow_category.cpu().numpy())
+     # Convert the lists to numpy arrays with shape (time_steps, rows, cols)
+     UTCI_all  = np.array(UTCI_all)
+     TMRT_all  = np.array(TMRT_all)
+@@ -438,6 +645,10 @@
+     Lup_all   = np.array(Lup_all)
+     Ldown_all = np.array(Ldown_all)
+     Shadow_all= np.array(Shadow_all)
++
++    if shadow_category:
++        Shadow_category_all = np.array(Shadow_category_all)
++
+     # Write a multi-band GeoTIFF for UTCI (each band corresponds to one time step)
+     driver = gdal.GetDriverByName('GTiff')
+     out_file_path = os.path.join(output_path, f'UTCI_{number}.tif')
+@@ -556,6 +767,38 @@
+             timestamp = base_date.replace(hour=hour, minute=minute).isoformat()
+             out_band.SetMetadata({'Time': timestamp})
+         out_dataset_op = None
++    if shadow_category:
++        out_file_path_cat = os.path.join(output_path, f'Category_{number}.tif')
++        num_bands_cat = Shadow_category_all.shape[0]
++        out_dataset_cat = driver.Create(out_file_path_cat, cols, rows, num_bands_cat, gdal.GDT_Byte)
++        out_dataset_cat.SetGeoTransform(dataset.GetGeoTransform())
++        out_dataset_cat.SetProjection(dataset.GetProjection())
++
++        for band in range(num_bands_cat):
++            out_band = out_dataset_cat.GetRasterBand(band + 1)
++            out_band.WriteArray(Shadow_category_all[band])
++            out_band.FlushCache()
++            hour = int(hours[band].cpu().item())
++            minute = int(minu[band].cpu().item())
++            timestamp = base_date.replace(hour=hour, minute=minute).isoformat()
++            out_band.SetMetadata({
++                'Time': timestamp,
++                'Category_0': 'sunlit',
++                'Category_1': 'building_shadow_only',
++                'Category_2': 'vegetation_shadow_only',
++                'Category_3': 'building_and_vegetation_shadow',
++                'Category_4': 'ldsm_shadow_only',
++                'Category_5': 'building_and_ldsm_shadow',
++                'Category_6': 'vegetation_and_ldsm_shadow',
++                'Category_7': 'building_vegetation_and_ldsm_shadow',
++                'Category_8': 'arcade_strip_shaded_by_box_base',
++                'Category_9': 'vegetation_and_arcade_shadow',
++                'Category_10': 'ldsm_and_arcade_shadow',
++                'Category_11': 'vegetation_ldsm_and_arcade_shadow',
++                'Category_12': 'building_footprint_not_shadow'
++            })
++
++        out_dataset_cat = None
+ 
+     # Clean up datasets
+     dataset = None
+--- upstream/solweig_gpu/walls_aspect.py
++++ ShadeWalk/solweig_gpu/walls_aspect.py
+@@ -165,24 +165,75 @@
+ 
+     return y
+ 
++def _coverage_fraction(arr):
++    """
++    Because all tiles have no blank pixels, coverage is:
++    count(arr > 0) / total_pixels
++    """
++    if arr is None:
++        return 0.0
++    total = arr.size
++    if total == 0:
++        return 0.0
++    return float(np.count_nonzero(arr > 0)) / float(total)
++
++
++def _is_sparse_tile(building_dsm_path, tree_path, min_building_fraction=0.01, min_tree_fraction=0.01):
++    """
++    A tile is considered sparse if BOTH:
++        building_fraction < min_building_fraction
++        tree_fraction < min_tree_fraction
++    """
++    dsm_ds = gdal.Open(building_dsm_path)
++    if dsm_ds is None:
++        raise FileNotFoundError(f"Could not open Building_DSM tile: {building_dsm_path}")
++    dsm_arr = dsm_ds.GetRasterBand(1).ReadAsArray()
++    dsm_ds = None
++
++    tree_ds = gdal.Open(tree_path)
++    if tree_ds is None:
++        raise FileNotFoundError(f"Could not open Trees tile: {tree_path}")
++    tree_arr = tree_ds.GetRasterBand(1).ReadAsArray()
++    tree_ds = None
++
++    building_fraction = _coverage_fraction(dsm_arr)
++    tree_fraction = _coverage_fraction(tree_arr)
++
++    sparse = (building_fraction < min_building_fraction) and (tree_fraction < min_tree_fraction)
++    return sparse, building_fraction, tree_fraction
++
+ def process_file_parallel(args):
+     """
+-    Process a single DEM tile to calculate walls and aspect (parallel worker function).
+-    
+-    This function is designed to be called by parallel processing workers.
+-    
+-    Args:
+-        args (tuple): (filename, dem_folder_path, wall_output_path, aspect_output_path)
+-    
+-    Returns:
+-        str: Filename of processed tile
++    Process one Building_DSM tile to calculate walls and aspect.
+     """
+-    filename, dem_folder_path, wall_output_path, aspect_output_path = args
+-    dem_path = os.path.join(dem_folder_path, filename)
++    (
++        filename,
++        building_dsm_folder_path,
++        tree_folder_path,
++        wall_output_path,
++        aspect_output_path,
++        skip_existing,
++        skip_sparse_tiles,
++        min_building_fraction,
++        min_tree_fraction
++    ) = args
++
++    building_dsm_path = os.path.join(building_dsm_folder_path, filename)
++
++    suffix = filename[13:-4]
++    wall_name = f"walls_{suffix}.tif"
++    aspect_name = f"aspect_{suffix}.tif"
++    wall_path = os.path.join(wall_output_path, wall_name)
++    aspect_path = os.path.join(aspect_output_path, aspect_name)
++
++    if skip_existing and os.path.exists(wall_path) and os.path.exists(aspect_path):
++        print(f"Skipping existing wall/aspect for {filename}")
++        return filename
+ 
+     dataset = None
++
+     try:
+-        dataset = gdal.Open(dem_path)
++        dataset = gdal.Open(building_dsm_path)
+         if dataset is None:
+             print(f"Could not open {filename}")
+             return filename
+@@ -190,120 +241,168 @@
+         band = dataset.GetRasterBand(1)
+         a = band.ReadAsArray().astype(np.float32)
+ 
+-        if a is None or np.all(np.isnan(a)):
+-            print(f"Skipping {filename}, invalid DEM.")
+-            # Close dataset before returning
++        if a is None:
++            print(f"Skipping {filename}, invalid Building_DSM.")
+             dataset = None
+             return filename
+ 
+-        # Extract geotransform and projection before closing dataset
+         geotransform = dataset.GetGeoTransform()
+         projection = dataset.GetProjection()
+-        
+-        # Close input dataset immediately after reading
+         dataset = None
+-        
++
+         scale = 1 / geotransform[1]
++
+         walls = findwalls(a, walllimit)
+         aspects = filter1Goodwin_as_aspect_v3(walls, scale, a)
+ 
+         driver = gdal.GetDriverByName('GTiff')
+-        out_names = [f"walls_{filename[13:-4]}.tif", f"aspect_{filename[13:-4]}.tif"]
+-        out_paths = [os.path.join(wall_output_path, out_names[0]),
+-                     os.path.join(aspect_output_path, out_names[1])]
+-
+-        for out_path, data in zip(out_paths, [walls, aspects]):
+-            # Retry logic for Windows file locking issues
+-            max_retries = 3
+-            retry_delay = 0.1
+-            success = False
+-            
+-            for attempt in range(max_retries):
+-                try:
+-                    out_ds = driver.Create(out_path, a.shape[1], a.shape[0], 1, gdal.GDT_Float32)
+-                    if out_ds is None:
+-                        if attempt < max_retries - 1:
+-                            time.sleep(retry_delay * (attempt + 1))
+-                            continue
+-                        print(f"Could not create output file {out_path}")
+-                        break
+-                        
+-                    out_ds.SetGeoTransform(geotransform)
+-                    out_ds.SetProjection(projection)
+-                    out_band = out_ds.GetRasterBand(1)
+-                    out_band.WriteArray(data)
+-                    out_band.FlushCache()
+-                    out_band = None
+-                    
+-                    # Explicitly close the dataset
+-                    out_ds.FlushCache()
+-                    out_ds = None
+-                    
+-                    # Force GDAL to close the file handle on Windows
+-                    gc.collect()
+-                    
+-                    # Small delay to ensure file handle is released
+-                    time.sleep(0.01)
+-                    success = True
+-                    break
+-                    
+-                except Exception as e:
+-                    # Ensure cleanup before retry
+-                    out_ds = None
+-                    gc.collect()
+-                    
+-                    if attempt < max_retries - 1:
+-                        time.sleep(retry_delay * (attempt + 1))
+-                        continue
+-                    else:
+-                        print(f"Error writing {out_path} after {max_retries} attempts: {e}")
+-                        break
++        rows, cols = walls.shape
+ 
+-        return filename
++        wall_ds = driver.Create(wall_path, cols, rows, 1, gdal.GDT_Float32)
++        wall_ds.SetGeoTransform(geotransform)
++        wall_ds.SetProjection(projection)
++        wall_ds.GetRasterBand(1).WriteArray(walls)
++        wall_ds.FlushCache()
++        wall_ds = None
++
++        aspect_ds = driver.Create(aspect_path, cols, rows, 1, gdal.GDT_Float32)
++        aspect_ds.SetGeoTransform(geotransform)
++        aspect_ds.SetProjection(projection)
++        aspect_ds.GetRasterBand(1).WriteArray(aspects)
++        aspect_ds.FlushCache()
++        aspect_ds = None
+ 
+     except Exception as e:
+         print(f"Error processing {filename}: {e}")
+-        # Ensure dataset is closed even on error
+-        if dataset is not None:
+-            dataset = None
+-        return filename
+ 
+-def run_parallel_processing(dem_folder_path, wall_output_path, aspect_output_path):
++    finally:
++        dataset = None
++
++    return filename
++
++def run_parallel_processing(
++    building_dsm_folder_path,
++    tree_folder_path,
++    wall_output_path,
++    aspect_output_path,
++    skip_existing=False,
++    skip_sparse_tiles=True,
++    min_building_fraction=0.01,
++    min_tree_fraction=0.01
++):
+     """
+-    Process all DEM tiles in parallel to calculate walls and aspects.
+-    
+-    This is the main entry point for wall and aspect calculation. It uses
+-    multiprocessing to process multiple tiles simultaneously for efficiency.
+-    
+-    Args:
+-        dem_folder_path (str): Path to folder containing DEM tile GeoTIFFs
+-        wall_output_path (str): Output path for wall height rasters
+-        aspect_output_path (str): Output path for wall aspect rasters
+-    
+-    Notes:
+-        - Uses multiple CPU cores for parallel processing
+-        - On Windows, uses fewer workers (max 8 or half of CPU cores) to avoid file locking issues
+-        - Progress bar shows processing status
+-        - Creates output directories if they don't exist
+-        - Skips tiles that cannot be opened or have invalid data
++    Process all Building_DSM tiles in parallel to calculate walls and aspects.
++
++    Parameters
++    ----------
++    building_dsm_folder_path : str
++        Folder containing Building_DSM_*.tif
++    tree_folder_path : str
++        Folder containing Trees_*.tif
++    wall_output_path : str
++        Output folder for walls_*.tif
++    aspect_output_path : str
++        Output folder for aspect_*.tif
++    skip_existing : bool
++        Reuse existing wall/aspect outputs if both files already exist
++    skip_sparse_tiles : bool
++        Skip tiles where BOTH building and tree coverage are below threshold
++    min_building_fraction : float
++        e.g. 0.01 means 1%
++    min_tree_fraction : float
++        e.g. 0.01 means 1%
+     """
+     os.makedirs(wall_output_path, exist_ok=True)
+     os.makedirs(aspect_output_path, exist_ok=True)
+ 
+-    dem_files = [f for f in os.listdir(dem_folder_path) if f.endswith('.tif') and not f.startswith('.')]
+-    args_list = [(f, dem_folder_path, wall_output_path, aspect_output_path) for f in dem_files]
++    dsm_files = [
++        f for f in os.listdir(building_dsm_folder_path)
++        if f.endswith('.tif') and not f.startswith('.')
++    ]
++
++    args_list = []
++    skipped_sparse = []
++
++    for f in dsm_files:
++        building_dsm_path = os.path.join(building_dsm_folder_path, f)
++
++        # Building_DSM_0_0.tif -> Trees_0_0.tif
++        tree_filename = f.replace("Building_DSM_", "Trees_", 1)
++        tree_path = os.path.join(tree_folder_path, tree_filename)
++
++        # Building_DSM_0_0.tif -> walls_0_0.tif / aspect_0_0.tif
++        suffix = f[13:-4]
++        wall_name = f"walls_{suffix}.tif"
++        aspect_name = f"aspect_{suffix}.tif"
++        wall_path = os.path.join(wall_output_path, wall_name)
++        aspect_path = os.path.join(aspect_output_path, aspect_name)
++
++        if skip_existing and os.path.exists(wall_path) and os.path.exists(aspect_path):
++            print(f"Skipping existing wall/aspect for {f}")
++            continue
++
++        if skip_sparse_tiles:
++            if not os.path.exists(tree_path):
++                print(f"Missing tree tile for {f}: {tree_path}")
++                continue
++
++            sparse, building_fraction, tree_fraction = _is_sparse_tile(
++                building_dsm_path,
++                tree_path,
++                min_building_fraction=min_building_fraction,
++                min_tree_fraction=min_tree_fraction
++            )
++
++            print(
++                f"[CHECK] {f}: "
++                f"building={building_fraction:.2%}, tree={tree_fraction:.2%}"
++            )
++
++            if sparse:
++                print(
++                    f"Skipping sparse tile before wall/aspect: {f} "
++                    f"(building={building_fraction:.2%}, tree={tree_fraction:.2%})"
++                )
++                skipped_sparse.append(f)
++                continue
++
++        args_list.append(
++            (
++                f,
++                building_dsm_folder_path,
++                tree_folder_path,
++                wall_output_path,
++                aspect_output_path,
++                skip_existing,
++                False,  
++                min_building_fraction,
++                min_tree_fraction
++            )
++        )
++
++    print(f"Total tiles found: {len(dsm_files)}")
++    print(f"Tiles submitted for wall/aspect: {len(args_list)}")
++    print(f"Skipped sparse tiles: {len(skipped_sparse)}")
+ 
+-    # On Windows, use fewer workers to avoid file locking issues
+-    # Reduce max_workers to prevent excessive concurrent file access
+     cpu_count = os.cpu_count() or 1
+-    if os.name == 'nt':  # Windows
+-        max_workers = min(8, max(1, cpu_count // 2))
++    if os.name == 'nt':
++        max_workers = min(12, max(1, cpu_count // 2))
+     else:
+         max_workers = min(32, cpu_count)
++
+     print(f"Using {max_workers} parallel workers")
+ 
++    if not args_list:
++        print("No tiles to process after filtering.")
++        return
++
+     with ProcessPoolExecutor(max_workers=max_workers) as executor:
+         futures = {executor.submit(process_file_parallel, args): args[0] for args in args_list}
+-        for future in tqdm(as_completed(futures), total=len(futures), desc="Computing Wall Height and Aspect", mininterval = 1):
++        for future in tqdm(
++            as_completed(futures),
++            total=len(futures),
++            desc="Computing Wall Height and Aspect",
++            mininterval=1
++        ):
+             _ = future.result()
+ 

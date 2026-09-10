@@ -1,0 +1,44 @@
+{
+  "version": "6.0.0",
+  "flags": {},
+  "shapes": [
+    {
+      "label": "linkway",
+      "points": [
+        [
+          303.6015625,
+          949.3046875
+        ],
+        [
+          295.0078125,
+          948.5234375
+        ],
+        [
+          290.7109375,
+          981.7265625
+        ],
+        [
+          288.9260721579306,
+          1024.0
+        ],
+        [
+          299.6106194690266,
+          1024.0
+        ],
+        [
+          302.0390625,
+          975.0859375
+        ]
+      ],
+      "group_id": null,
+      "description": "",
+      "shape_type": "polygon",
+      "flags": {},
+      "mask": null
+    }
+  ],
+  "imagePath": "tile_x35840_y53760.png",
+  "imageData": null,
+  "imageHeight": 1024,
+  "imageWidth": 1024
+}

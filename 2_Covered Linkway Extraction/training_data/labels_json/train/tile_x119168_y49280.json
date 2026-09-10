@@ -1,0 +1,36 @@
+{
+  "version": "6.0.0",
+  "flags": {},
+  "shapes": [
+    {
+      "label": "linkway",
+      "points": [
+        [
+          521.6153846153845,
+          879.9487179487179
+        ],
+        [
+          560.7179487179486,
+          1020.9743589743589
+        ],
+        [
+          572.2564102564102,
+          1016.4871794871794
+        ],
+        [
+          538.2820512820513,
+          876.7435897435897
+        ]
+      ],
+      "group_id": null,
+      "description": "",
+      "shape_type": "polygon",
+      "flags": {},
+      "mask": null
+    }
+  ],
+  "imagePath": "tile_x119168_y49280.png",
+  "imageData": null,
+  "imageHeight": 1024,
+  "imageWidth": 1024
+}

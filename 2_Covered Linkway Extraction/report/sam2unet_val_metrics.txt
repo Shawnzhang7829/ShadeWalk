@@ -1,0 +1,2 @@
+SAM2-UNet+LoRA (best_model_dice0.4856) vs 303 v3 val tiles [paper protocol: model fwd, thr0.5, micro-avg, prompt-free]
+P=0.3009 R=0.9463 F1=0.4566 IoU=0.2958 clDice=0.6274 Betti0=5.40

@@ -1,0 +1,162 @@
+[
+  {
+    "epoch": 1,
+    "loss": 0.9799175186470004,
+    "val_dice": 0.4168814338297374,
+    "val_iou": 0.2805945882057089,
+    "elapsed_sec": 387.2242240905762,
+    "saved_path": null
+  },
+  {
+    "epoch": 2,
+    "loss": 0.9730102105601,
+    "val_dice": 0.3791425878981048,
+    "val_iou": 0.24977296256978015,
+    "elapsed_sec": 398.5873906612396,
+    "saved_path": null
+  },
+  {
+    "epoch": 3,
+    "loss": 0.9601425153784232,
+    "val_dice": 0.4857188974051911,
+    "val_iou": 0.339531126114469,
+    "elapsed_sec": 423.65594506263733,
+    "saved_path": null
+  },
+  {
+    "epoch": 4,
+    "loss": 0.9546931073217109,
+    "val_dice": 0.4634663128272221,
+    "val_iou": 0.3199612219716923,
+    "elapsed_sec": 416.34131026268005,
+    "saved_path": null
+  },
+  {
+    "epoch": 5,
+    "loss": 0.9421216110781868,
+    "val_dice": 0.48238676288168325,
+    "val_iou": 0.3372693465069455,
+    "elapsed_sec": 415.15778374671936,
+    "saved_path": null
+  },
+  {
+    "epoch": 6,
+    "loss": 0.9363205017577304,
+    "val_dice": 0.48349731704148113,
+    "val_iou": 0.33838249233162637,
+    "elapsed_sec": 417.5969498157501,
+    "saved_path": null
+  },
+  {
+    "epoch": 7,
+    "loss": 0.9320757750532415,
+    "val_dice": 0.4972305730700247,
+    "val_iou": 0.35048740001295536,
+    "elapsed_sec": 417.0400483608246,
+    "saved_path": null
+  },
+  {
+    "epoch": 8,
+    "loss": 0.9235090402388336,
+    "val_dice": 0.4858148240032942,
+    "val_iou": 0.3403265247062489,
+    "elapsed_sec": 417.33997893333435,
+    "saved_path": null
+  },
+  {
+    "epoch": 9,
+    "loss": 0.9011292702490741,
+    "val_dice": 0.5226715838583571,
+    "val_iou": 0.37492640031936475,
+    "elapsed_sec": 414.1095449924469,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous\\geosam_topolora_autonomous_lean_dice0.5227.pth"
+  },
+  {
+    "epoch": 10,
+    "loss": 0.9046028381084451,
+    "val_dice": 0.5128100439170449,
+    "val_iou": 0.36511663402605665,
+    "elapsed_sec": 419.20201420783997,
+    "saved_path": null
+  },
+  {
+    "epoch": 11,
+    "loss": 0.8888404826716622,
+    "val_dice": 0.5241751747627216,
+    "val_iou": 0.3759380439299952,
+    "elapsed_sec": 416.5080153942108,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous\\geosam_topolora_autonomous_lean_dice0.5242.pth"
+  },
+  {
+    "epoch": 12,
+    "loss": 0.8903272692667376,
+    "val_dice": 0.4804898560062575,
+    "val_iou": 0.33551494768754514,
+    "elapsed_sec": 416.46038722991943,
+    "saved_path": null
+  },
+  {
+    "epoch": 13,
+    "loss": 0.8738137774243213,
+    "val_dice": 0.49699363128988944,
+    "val_iou": 0.35115116797193613,
+    "elapsed_sec": 417.4056942462921,
+    "saved_path": null
+  },
+  {
+    "epoch": 14,
+    "loss": 0.8776408463421435,
+    "val_dice": 0.46475150174395796,
+    "val_iou": 0.32251571959719993,
+    "elapsed_sec": 422.01860547065735,
+    "saved_path": null
+  },
+  {
+    "epoch": 15,
+    "loss": 0.8780562303001338,
+    "val_dice": 0.5212939589434402,
+    "val_iou": 0.373459951554433,
+    "elapsed_sec": 393.91426396369934,
+    "saved_path": null
+  },
+  {
+    "epoch": 16,
+    "loss": 0.8603404020835267,
+    "val_dice": 0.523743104960664,
+    "val_iou": 0.37603747109985747,
+    "elapsed_sec": 397.0369782447815,
+    "saved_path": null
+  },
+  {
+    "epoch": 17,
+    "loss": 0.8726396391002258,
+    "val_dice": 0.5172987280468274,
+    "val_iou": 0.37018538992217004,
+    "elapsed_sec": 332.7740321159363,
+    "saved_path": null
+  },
+  {
+    "epoch": 18,
+    "loss": 0.8661717672896857,
+    "val_dice": 0.5126866124435167,
+    "val_iou": 0.36569772858215815,
+    "elapsed_sec": 332.16752099990845,
+    "saved_path": null
+  },
+  {
+    "epoch": 19,
+    "loss": 0.8547952256285318,
+    "val_dice": 0.5154981763579058,
+    "val_iou": 0.3682275863245489,
+    "elapsed_sec": 332.5439455509186,
+    "saved_path": null
+  },
+  {
+    "epoch": 20,
+    "loss": 0.8688706712114929,
+    "val_dice": 0.5127954608545897,
+    "val_iou": 0.36580781724330524,
+    "elapsed_sec": 334.41894602775574,
+    "saved_path": null
+  }
+]

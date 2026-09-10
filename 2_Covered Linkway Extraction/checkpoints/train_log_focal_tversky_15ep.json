@@ -1,0 +1,122 @@
+[
+  {
+    "epoch": 1,
+    "loss": 0.24421326043360894,
+    "val_dice": 0.6929473335059833,
+    "val_iou": 0.5503604376462915,
+    "elapsed_sec": 377.53080201148987,
+    "saved_path": null
+  },
+  {
+    "epoch": 2,
+    "loss": 0.24095276887943545,
+    "val_dice": 0.6870286671661827,
+    "val_iou": 0.544299712101706,
+    "elapsed_sec": 370.71456837654114,
+    "saved_path": null
+  },
+  {
+    "epoch": 3,
+    "loss": 0.24682684819960948,
+    "val_dice": 0.7114090075350339,
+    "val_iou": 0.5733641735088778,
+    "elapsed_sec": 370.74238538742065,
+    "saved_path": null
+  },
+  {
+    "epoch": 4,
+    "loss": 0.24390741302124638,
+    "val_dice": 0.7111135967667721,
+    "val_iou": 0.5734053127120217,
+    "elapsed_sec": 369.73020029067993,
+    "saved_path": null
+  },
+  {
+    "epoch": 5,
+    "loss": 0.24008458452575868,
+    "val_dice": 0.7132577073166274,
+    "val_iou": 0.5757465355473456,
+    "elapsed_sec": 369.35644817352295,
+    "saved_path": null
+  },
+  {
+    "epoch": 6,
+    "loss": 0.23847330575532252,
+    "val_dice": 0.7092051296108685,
+    "val_iou": 0.5713209030410646,
+    "elapsed_sec": 370.17947006225586,
+    "saved_path": null
+  },
+  {
+    "epoch": 7,
+    "loss": 0.24942672023973841,
+    "val_dice": 0.714997453771857,
+    "val_iou": 0.5782524864285256,
+    "elapsed_sec": 369.31305980682373,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky_15ep\\geosam_topolora_autonomous_lean_dice0.7150.pth"
+  },
+  {
+    "epoch": 8,
+    "loss": 0.23662245904307555,
+    "val_dice": 0.709100795306982,
+    "val_iou": 0.5711875889490081,
+    "elapsed_sec": 371.13998079299927,
+    "saved_path": null
+  },
+  {
+    "epoch": 9,
+    "loss": 0.23154772164318527,
+    "val_dice": 0.7156830845100035,
+    "val_iou": 0.5788456708798607,
+    "elapsed_sec": 368.8875014781952,
+    "saved_path": "C:/GeoSAM-backup/runs/autonomous_tversky_15ep\\geosam_topolora_autonomous_lean_dice0.7157.pth"
+  },
+  {
+    "epoch": 10,
+    "loss": 0.23308279522058398,
+    "val_dice": 0.7135698063576009,
+    "val_iou": 0.5764171371986463,
+    "elapsed_sec": 333.62319350242615,
+    "saved_path": null
+  },
+  {
+    "epoch": 11,
+    "loss": 0.22894266380531952,
+    "val_dice": 0.7156155541334157,
+    "val_iou": 0.5791632165252824,
+    "elapsed_sec": 334.3157534599304,
+    "saved_path": null
+  },
+  {
+    "epoch": 12,
+    "loss": 0.23817534593514877,
+    "val_dice": 0.7155827957283013,
+    "val_iou": 0.5789471500461592,
+    "elapsed_sec": 331.1028428077698,
+    "saved_path": null
+  },
+  {
+    "epoch": 13,
+    "loss": 0.23507892439086545,
+    "val_dice": 0.715134311256282,
+    "val_iou": 0.5785393666755434,
+    "elapsed_sec": 332.21764159202576,
+    "saved_path": null
+  },
+  {
+    "epoch": 14,
+    "loss": 0.24251363437512133,
+    "val_dice": 0.7141749737141757,
+    "val_iou": 0.5769973453726261,
+    "elapsed_sec": 331.16883993148804,
+    "saved_path": null
+  },
+  {
+    "epoch": 15,
+    "loss": 0.2291217121931881,
+    "val_dice": 0.7154464825007557,
+    "val_iou": 0.5784739602614325,
+    "elapsed_sec": 368.15700244903564,
+    "saved_path": null
+  }
+]

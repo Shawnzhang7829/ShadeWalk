@@ -1,0 +1,39 @@
+clDice ablation — controlled, single eval run (eval_ckpt_paper.py, thr=0.5)
+303 v3 val tiles, model forward, micro-avg, prompt-free, leakage-free.
+
+Only difference between rows 1/2 and row 3: --cldice_weight 0 vs 0.3.
+Everything else identical: loss=structure(pw=30.0), lr=5e-5, batch=2,
+LoRA rank16/alpha32 on all 32 QKV blocks, same train/val split (808/303).
+
+model                                    P       R      F1     IoU  clDice  Betti0
+----------------------------------------------------------------------------------
+LoRA_only_noclDice_best             0.2668  0.9460  0.4162  0.2628  0.5032   16.66
+LoRA_only_noclDice_ep20             0.2611  0.9511  0.4097  0.2576  0.5049   14.88
+LoRA_clDice_v3                      0.3422  0.9320  0.5006  0.3339  0.6352   10.35
+
+clDice contribution (row1 -> row3):
+  F1     +0.084 (+20.3%)
+  IoU    +0.071 (+27.0%)
+  clDice +0.132 (+26.2%)
+  P      +0.075 (0.267 -> 0.342), R roughly unchanged (0.946 -> 0.932)
+  Betti0 -6.31  (16.66 -> 10.35, 38% fewer fragmentation errors)
+
+Training budget was matched, not truncated:
+  no-clDice : 15 epochs from scratch (best val_dice 0.4320 @ep11)
+              + 5 resumed epochs -> no epoch beat 0.4320 (plateau, 20 ep total)
+  with clDice: 15-epoch from-scratch best val_dice 0.5210 @ep11
+              (deployed ckpt 0.5242 after resume, ~22 ep cumulative)
+So the gap is structural, not undertraining: the no-clDice clDice metric stays
+at 0.503-0.505 whether trained 15 or 20 epochs.
+
+Protocol sanity check: LoRA_clDice_v3 reproduces the published report values
+(F1 0.501, IoU 0.334, clDice 0.635, Betti0 10.35) -> same protocol, comparable.
+
+Checkpoints
+  runs/autonomous_nocldice/geosam_topolora_autonomous_lean_dice0.4320.pth
+  runs/autonomous_nocldice_ep20/geosam_topolora_autonomous_lean_final.pth
+  runs/autonomous/geosam_topolora_autonomous_lean_dice0.5242.pth
+Logs
+  runs/autonomous_nocldice/train.log          (15 ep from scratch)
+  runs/autonomous_nocldice_ep20/train.log     (5 resumed ep)
+  runs/autonomous_nocldice/eval_ablation.log  (this eval)

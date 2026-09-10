@@ -1,0 +1,122 @@
+[
+  {
+    "epoch": 1,
+    "loss": 1.7967748032643063,
+    "val_dice": 0.25883904317912254,
+    "val_iou": 0.15435726111621034,
+    "elapsed_sec": 500.9273633956909,
+    "saved_path": "D:/Claude/GeoSAM-TopoLoRA/outputs/GeoSAM-backup/runs/autonomous_nocldice\\geosam_topolora_autonomous_lean_dice0.2588.pth"
+  },
+  {
+    "epoch": 2,
+    "loss": 1.200410558593155,
+    "val_dice": 0.21126148529732516,
+    "val_iou": 0.12220289476854877,
+    "elapsed_sec": 498.8477017879486,
+    "saved_path": null
+  },
+  {
+    "epoch": 3,
+    "loss": 1.1157168833040956,
+    "val_dice": 0.3294862240306286,
+    "val_iou": 0.2052236248774635,
+    "elapsed_sec": 508.1863605976105,
+    "saved_path": "D:/Claude/GeoSAM-TopoLoRA/outputs/GeoSAM-backup/runs/autonomous_nocldice\\geosam_topolora_autonomous_lean_dice0.3295.pth"
+  },
+  {
+    "epoch": 4,
+    "loss": 1.0747680895694411,
+    "val_dice": 0.37519124236153684,
+    "val_iou": 0.2416599877775902,
+    "elapsed_sec": 490.16039204597473,
+    "saved_path": "D:/Claude/GeoSAM-TopoLoRA/outputs/GeoSAM-backup/runs/autonomous_nocldice\\geosam_topolora_autonomous_lean_dice0.3752.pth"
+  },
+  {
+    "epoch": 5,
+    "loss": 1.038921653117874,
+    "val_dice": 0.3423447130317874,
+    "val_iou": 0.21565723901765207,
+    "elapsed_sec": 494.2050623893738,
+    "saved_path": null
+  },
+  {
+    "epoch": 6,
+    "loss": 1.0163484885550962,
+    "val_dice": 0.33139129329052114,
+    "val_iou": 0.208124931020517,
+    "elapsed_sec": 506.8835537433624,
+    "saved_path": null
+  },
+  {
+    "epoch": 7,
+    "loss": 1.0018717224645142,
+    "val_dice": 0.373584953908737,
+    "val_iou": 0.2415711646934108,
+    "elapsed_sec": 498.11796498298645,
+    "saved_path": null
+  },
+  {
+    "epoch": 8,
+    "loss": 0.9758071966543056,
+    "val_dice": 0.39987317502646647,
+    "val_iou": 0.2634697595947262,
+    "elapsed_sec": 493.62477922439575,
+    "saved_path": "D:/Claude/GeoSAM-TopoLoRA/outputs/GeoSAM-backup/runs/autonomous_nocldice\\geosam_topolora_autonomous_lean_dice0.3999.pth"
+  },
+  {
+    "epoch": 9,
+    "loss": 0.9462576454671303,
+    "val_dice": 0.42642485216394604,
+    "val_iou": 0.28650505928041325,
+    "elapsed_sec": 509.2966060638428,
+    "saved_path": "D:/Claude/GeoSAM-TopoLoRA/outputs/GeoSAM-backup/runs/autonomous_nocldice\\geosam_topolora_autonomous_lean_dice0.4264.pth"
+  },
+  {
+    "epoch": 10,
+    "loss": 0.9409742221826374,
+    "val_dice": 0.417638530092874,
+    "val_iou": 0.279411920757235,
+    "elapsed_sec": 507.4810435771942,
+    "saved_path": null
+  },
+  {
+    "epoch": 11,
+    "loss": 0.9289886033771062,
+    "val_dice": 0.4320391418666726,
+    "val_iou": 0.2918926676953569,
+    "elapsed_sec": 491.1679935455322,
+    "saved_path": "D:/Claude/GeoSAM-TopoLoRA/outputs/GeoSAM-backup/runs/autonomous_nocldice\\geosam_topolora_autonomous_lean_dice0.4320.pth"
+  },
+  {
+    "epoch": 12,
+    "loss": 0.9241172057567256,
+    "val_dice": 0.4225479477695667,
+    "val_iou": 0.28459687216614493,
+    "elapsed_sec": 510.85267996788025,
+    "saved_path": null
+  },
+  {
+    "epoch": 13,
+    "loss": 0.9072374720679651,
+    "val_dice": 0.4081325945837005,
+    "val_iou": 0.2727132840232054,
+    "elapsed_sec": 514.529158115387,
+    "saved_path": null
+  },
+  {
+    "epoch": 14,
+    "loss": 0.901474315119852,
+    "val_dice": 0.4125232715165038,
+    "val_iou": 0.27697067964829464,
+    "elapsed_sec": 502.22663164138794,
+    "saved_path": null
+  },
+  {
+    "epoch": 15,
+    "loss": 0.9058019152224654,
+    "val_dice": 0.42489261213014445,
+    "val_iou": 0.2872602040441412,
+    "elapsed_sec": 523.4978108406067,
+    "saved_path": null
+  }
+]

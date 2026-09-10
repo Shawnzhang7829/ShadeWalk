@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+title: "ShadeWalk: shade-facility extraction, facility-aware shadow modelling and coolest-route pedestrian flow mapping"
+type: software
+authors:
+  - family-names: Zhang
+    given-names: Shuyang
+    alias: Shawn Zhang
+repository-code: "https://github.com/Shawnzhang7829/ShadeWalk"
+version: "1.0.0"
+date-released: "2026-09-10"
+license: MIT
+keywords:
+  - urban shade
+  - pedestrian routing
+  - SOLWEIG
+  - covered linkway
+  - five-foot way
+  - street view imagery
+  - Singapore
+references:
+  - type: article
+    title: "SOLWEIG-GPU: GPU-Accelerated Thermal Comfort Modeling Framework for Urban Digital Twins"
+    authors:
+      - family-names: Kamath
+        given-names: Harsh G.
+      - family-names: Sudharsan
+        given-names: Naveen
+      - family-names: Singh
+        given-names: Manmeet
+      - family-names: Wallenberg
+        given-names: Nils
+      - family-names: Lindberg
+        given-names: Fredrik
+      - family-names: Niyogi
+        given-names: Dev
+    journal: "Journal of Open Source Software"
+    year: 2026
+    volume: 11
+    issue: 118
+    doi: "10.21105/joss.09535"
+  - type: article
+    title: "Madina Python Package: Scalable Urban Network Analysis for Modeling Pedestrian and Bicycle Trips in Cities"
+    authors:
+      - family-names: Alhassan
+        given-names: Abdulaziz
+      - family-names: Sevtsuk
+        given-names: Andres
+    journal: "SSRN"
+    year: 2024
+    doi: "10.2139/ssrn.4748255"

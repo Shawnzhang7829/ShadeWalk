@@ -1,0 +1,6 @@
+CLW polys: 7012
+overlap polygons (>= 3.0 m2): 1254
+total overlap area ha: 3.90
+SDSM_h mean/median m: 2.40 / 2.40
+positive imgs: 3456 (864 panos)
+negative imgs (sampled): 6912

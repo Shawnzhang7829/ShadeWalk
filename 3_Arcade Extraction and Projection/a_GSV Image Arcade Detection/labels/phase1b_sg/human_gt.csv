@@ -1,0 +1,33 @@
+cell_id,human_label,my_label,clip_p_arcade,note,path
+0,1,1,0.9379672,covered shophouse frontage,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\165777_103.85772746910469_1.306800261352751_202301_baseheading42.61_viewheading132.61_2.jpg
+1,1,1,0.7683967,covered market walkway,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\14165_103.8520018779592_1.3061420879625898_202403_baseheading300.75_viewheading30.75_2.jpg
+2,1,1,0.65358007,corner covered frontage,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\165926_103.85606259933603_1.3061051499227678_202406_baseheading136.78_viewheading226.78_2.jpg
+3,0,1,0.59656304,classic shophouse five-foot way,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\159169_103.8516792222466_1.3070335905291917_202402_baseheading130.93_viewheading40.93_4.jpg
+4,1,1,0.5422337,covered carpark walkway,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\5177_103.85363661599533_1.313463972538569_201805_baseheading314.16_viewheading44.16_2.jpg
+5,0,1,0.5102639,covered market stalls,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\79170_103.85509828009366_1.3087719401169546_202406_baseheading34.07_viewheading304.07_4.jpg
+6,1,1,0.4833188,old shophouse ground cover,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\123890_103.8516311364725_1.3234071517984638_202402_baseheading44.51_viewheading314.51_4.jpg
+7,0,1,0.46884668,blue shophouse ground walkway,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\121289_103.87734379979685_1.3119215413931902_202102_baseheading57.12_viewheading327.12_4.jpg
+8,1,1,0.43418062,covered five-foot way left,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\32323_103.87759842386664_1.3117807197622213_202406_baseheading169.52_viewheading259.52_2.jpg
+9,1,1,0.4076037,red awning shophouse row,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\158949_103.8539625535714_1.3075254530284952_202406_baseheading282.86_viewheading12.86_2.jpg
+10,1,1,0.3769662,green shop covered corner,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\37405_103.8785466376893_1.3143346220628596_202406_baseheading77.21_viewheading167.21_2.jpg
+11,1,1,0.35655168,green ground floor covered,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\14075_103.85352592912207_1.3076151598621033_202406_baseheading279.46_viewheading9.46_2.jpg
+12,1,1,0.3298098,cream shophouse terrace,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\150387_103.85110928733927_1.3087860038318115_202402_baseheading36.83_viewheading126.83_2.jpg
+13,0,1,0.31217134,HDB covered linkway+pavilion,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\130709_103.87853451366661_1.3101618841094582_202406_baseheading350.79_viewheading80.79_2.jpg
+14,0,1,0.29464805,covered frontage right,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\94773_103.87757279269015_1.3102436883797401_202406_baseheading350.74_viewheading80.74_2.jpg
+15,0,1,0.28139096,covered ground floor greenery,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\48888_103.86396751983861_1.3251856888431741_202404_baseheading296.16_viewheading26.16_2.jpg
+16,0,1,0.26530272,HDB ground covered partial,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\9963_103.87461366079695_1.3291055234232771_202404_baseheading213.87_viewheading303.87_2.jpg
+17,0,0,0.24586008,blurred unclear/open,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\56531_103.8497633737356_1.3185283029354_202202_baseheading80.33_viewheading170.33_2.jpg
+18,1,1,0.23183663,shophouse covered right,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\123892_103.85188788736926_1.323659992148802_202406_baseheading319.74_viewheading49.74_2.jpg
+19,0,0,0.21729015,open corner,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\57512_103.85992800023885_1.3175244548358218_202406_baseheading38.75_viewheading128.75_2.jpg
+20,0,1,0.20819087,HDB covered linkway partial,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\152561_103.87630946818223_1.32740438272271_202404_baseheading126.41_viewheading36.41_4.jpg
+21,0,1,0.19520454,red banner shophouse covered,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\8126_103.85343448427055_1.3072535628080137_201807_baseheading281.63_viewheading11.63_2.jpg
+22,0,0,0.18496642,open road trees,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\81571_103.84694001655465_1.3138646564302792_202402_baseheading315.39_viewheading225.39_4.jpg
+23,1,0,0.17742752,HDB open base,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\17437_103.8654409151852_1.3209165154494544_202406_baseheading213.53_viewheading303.53_2.jpg
+24,0,0,0.16749588,open field barrier,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\127516_103.86861958502061_1.2963184307078166_202406_baseheading227.44_viewheading137.44_4.jpg
+25,1,0,0.15869468,open road trees,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\49548_103.86139223198562_1.3193524517975306_202406_baseheading38.31_viewheading308.31_4.jpg
+26,1,0,0.15133938,open road car,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\159676_103.85314845897092_1.3022921940838457_202403_baseheading219.73_viewheading129.73_4.jpg
+27,0,0,0.14641304,open road HDB,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\61251_103.84732740070378_1.2974870135479393_202406_baseheading276.06_viewheading6.06_2.jpg
+28,1,0,0.13544814,open road glass building,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\153278_103.86553782407614_1.3144528434831493_202406_baseheading307.93_viewheading217.93_4.jpg
+29,0,0,0.13206397,open house greenery,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\65840_103.85568551947553_1.327853130252729_202402_baseheading210.30_viewheading300.30_2.jpg
+30,0,0,0.1242404,open road residential,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\154842_103.8758230725172_1.3126089944886477_202406_baseheading162.82_viewheading252.82_2.jpg
+31,0,0,0.1201149,open corner tiled roof,D:\Claude\SVI_FFW\SVI\Singapore\Singapore SVI\149144_103.85671480965539_1.3278409279769614_202406_baseheading280.36_viewheading10.36_2.jpg
