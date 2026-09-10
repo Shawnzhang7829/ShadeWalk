@@ -1,5 +1,7 @@
 # Module 3b - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 | Item | File | Specification | Source | Used by |
 |---|---|---|---|---|
 | Arcade-positive views, Singapore | `colonnade_sg_v2_positive.csv` (or `arcade_sg_positive.csv` from the reference detector) | `pid, view, viewheading, lon, lat, probe_prob, is_colonnade`; 28,908 rows; lon/lat WGS84 | Module 3a | `step2_project.py sg` |

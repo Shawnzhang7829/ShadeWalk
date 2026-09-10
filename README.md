@@ -15,7 +15,7 @@ coolest-route pedestrian-flow mapping for Singapore (with Bologna as a second st
 
 One folder per module, numbered in pipeline order, plus `docs/` (workflow figure, software environments)
 and `PROVENANCE.md` (origin of every file). Code is kept in this repository; the input datasets are distributed
-through the Zenodo data record of the paper (see the `INPUT_DATA.md` files).
+through the figshare data record of the paper (https://doi.org/10.6084/m9.figshare.33549025, see the `INPUT_DATA.md` files).
 
 ## Modules
 
@@ -58,7 +58,8 @@ Not included (size or licence): raw imagery (Google satellite basemap tiles, Goo
 city-wide 1 m rasters (DEM, canopy, building DSM, 24-band shadow / category outputs), LTA and OSM source layers,
 the SAM ViT-H weights, and the derived vector / raster products of each module. Their sources and specifications
 are listed in the `INPUT_DATA.md` files. The input layers (shadow-model rasters, covered-linkway training tiles,
-transit and building layers, cleaned OSM lines) are released in the Zenodo data record accompanying the paper;
+transit and building layers, cleaned OSM lines) are released in the figshare data record accompanying the paper
+(https://doi.org/10.6084/m9.figshare.33549025);
 the derived products are regenerated from them with this code and are available from the corresponding author on request.
 
 ## Running the code
@@ -90,12 +91,14 @@ The code is archived on Zenodo. Version 1.0.0 (this release, tag `v1.0.0`) has t
 [10.5281/zenodo.22688710](https://doi.org/10.5281/zenodo.22688710); the concept DOI
 [10.5281/zenodo.22688709](https://doi.org/10.5281/zenodo.22688709) always resolves to the latest version.
 
+The input data are archived on figshare: [10.6084/m9.figshare.33549025](https://doi.org/10.6084/m9.figshare.33549025).
+
 Suggested code-availability statement:
 
 > The code of the ShadeWalk pipeline (shade-facility extraction, facility-aware SOLWEIG-GPU shadow modelling,
 > pedestrian-network reconstruction and coolest-route pedestrian-flow mapping) is openly available at
 > https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (version 1.0.0,
-> https://doi.org/10.5281/zenodo.22688710).
+> https://doi.org/10.5281/zenodo.22688710). The input datasets are available on figshare (https://doi.org/10.6084/m9.figshare.33549025).
 
 Please cite the ShadeWalk paper (reference to be added on publication) and this repository (`CITATION.cff`).
 The shadow engine builds on SOLWEIG-GPU (Kamath et al., 2026, JOSS) and SOLWEIG (Lindberg et al., 2008); the flow

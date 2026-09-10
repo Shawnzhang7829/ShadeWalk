@@ -1,5 +1,7 @@
 # Module 4b - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 All inputs are placed under `Constants.ROOT` (the parent folder of the `Patronage_Flow` package); the file names
 below are the ones expected by `Constants.py`.
 

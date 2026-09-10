@@ -1,5 +1,7 @@
 # Module 4a - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 | Item | File | Specification | Source | Used by |
 |---|---|---|---|---|
 | Reconstructed pedestrian network | `step4_network_final.gpkg` | 469,434 line segments, EPSG:3414, fields `src`, `length` | Module 5 | `make_prep.py` |

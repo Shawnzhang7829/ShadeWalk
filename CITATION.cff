@@ -57,3 +57,11 @@ references:
     journal: "SSRN"
     year: 2024
     doi: "10.2139/ssrn.4748255"
+  - type: data
+    title: "ShadeWalk data release: shadow-model rasters, covered-linkway training tiles, transit and building layers for Singapore"
+    authors:
+      - family-names: Zhang
+        given-names: Shuyang
+    year: 2026
+    doi: "10.6084/m9.figshare.33549025"
+    repository: "https://figshare.com"

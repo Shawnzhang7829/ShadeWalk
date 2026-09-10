@@ -1,5 +1,7 @@
 # Module 1 - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 All rasters must share one grid (same CRS, resolution, extent and pixel alignment); the package checks this in
 `preprocessor.ppr()`. For Singapore the grid is 1 m, EPSG:3414 (SVY21), 44,000 x 27,000 px,
 bounds 2938.6 / 23953.5 / 46938.6 / 50953.5 (E / S / W / N in metres). File names follow the convention

@@ -1,5 +1,7 @@
 # Module 3a - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 | Item | Files | Specification | Source | Used by |
 |---|---|---|---|---|
 | Street-view images, Singapore | `SVI/Singapore/Singapore SVI/*.jpg` (595,408 files) | 4 perspective views per panorama, JPEG, named `<pid>_<lon>_<lat>_<YYYYMM>_baseheading<deg>_viewheading<deg>_<view>.jpg`; WGS84 lon/lat in the name | Google Street View, downloaded at the sample points (nearest panorama to each point; not redistributable) | detection, probe training |

@@ -1,5 +1,7 @@
 # Module 2 - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 | Item | File | Specification | Source | Used by |
 |---|---|---|---|---|
 | Satellite imagery, whole island | `SG_google_map_03m_SVY21.tif` | RGBA GeoTIFF, 179,096 x 115,025 px, 0.3 m, EPSG:3414, bounds 2667.5 / 15748.7 / 56396.3 / 50256.2 | 0.3 m Google Earth imagery mosaicked and reprojected to SVY21 (the island mosaic is not redistributed; the 1,111 training tiles are part of the data record) | training-tile extraction, `inference_autonomous_island.py`, `make_fishnet_v3.py`, `sweep_fp_filters.py` |

@@ -1,5 +1,7 @@
 # Module 5 - input data inventory
 
+Data record (input layers referred to below): figshare, https://doi.org/10.6084/m9.figshare.33549025
+
 | Item | File | Specification | Source | Used by |
 |---|---|---|---|---|
 | OSM pedestrian network | `Shp/SG/Pedestrian route/OSM/Highway_OSM.gpkg` | 266,977 line features, EPSG:3414, OSM `highway` tags and all other OSM tags (427 fields) | OpenStreetMap extract of Singapore (`highway` layer, June 2026), reprojected to SVY21; the cleaned output of stage 2b is released as `SG_osm_lines.gpkg` in the data record | `step4_2b_osm.py` (motorway / trunk classes excluded) |
