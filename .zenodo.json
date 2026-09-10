@@ -1,0 +1,47 @@
+{
+  "title": "ShadeWalk: shade-facility extraction, facility-aware shadow modelling and coolest-route pedestrian flow mapping",
+  "upload_type": "software",
+  "description": "<p>Code for ShadeWalk: city-scale mapping of artificial shade facilities (arcades / five-foot ways and covered linkways), facility-aware hourly shadow modelling with a modified SOLWEIG-GPU (LDSM and ADSM layers, 13-class shadow category), reconstruction of a shade-aware pedestrian network from OpenStreetMap, and coolest-route pedestrian-flow mapping for Singapore (Bologna as a second study city for the arcade detector).</p><p>The repository contains five modules: (1) SOLWEIG-GPU with LDSM/ADSM shadow layers, (2) covered-linkway extraction with GeoSAM + TopoLoRA including the annotated training dataset and the trained checkpoint, (3) arcade detection in street-view imagery with CLIP linear probes and projection onto building footprints, (4) pedestrian flow mapping (coolest-route cost model and madina patronage betweenness) with the ShadeWalk web tool, and (5) OSM pedestrian-network reconstruction with facility centrelines. Every module is documented with a README and a complete input-data inventory.</p><p>Licence: MIT for the ShadeWalk code; the SOLWEIG-GPU derivative in module 1 is GPL-3.0.</p>",
+  "creators": [
+    {
+      "name": "Zhang, Shuyang"
+    }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "version": "1.0.0",
+  "language": "eng",
+  "keywords": [
+    "urban shade",
+    "pedestrian routing",
+    "coolest route",
+    "SOLWEIG",
+    "covered linkway",
+    "five-foot way",
+    "arcade",
+    "street view imagery",
+    "Segment Anything",
+    "CLIP",
+    "pedestrian flow",
+    "Singapore"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.21105/joss.09535",
+      "relation": "isDerivedFrom",
+      "resource_type": "software",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.2139/ssrn.4748255",
+      "relation": "cites",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "https://github.com/Shawnzhang7829/ShadeWalk",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
