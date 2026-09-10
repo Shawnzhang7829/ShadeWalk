@@ -104,9 +104,17 @@ Suggested availability statements (cite the version DOI of the release used for 
 > shadow modelling, pedestrian-network reconstruction and coolest-route pedestrian-flow mapping) is openly available
 > at https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (https://doi.org/10.5281/zenodo.22688709; version 1.0.1).
 >
-> Data availability: The input datasets (shadow-model rasters, covered-linkway training tiles, transit and building
-> layers) are available on figshare (https://doi.org/10.6084/m9.figshare.33549025). Derived products can be regenerated with the code and
-> are available from the corresponding author on request.
+> Data availability: The input datasets of the ShadeWalk pipeline (shadow-model rasters, covered-linkway training
+> tiles, transit and building layers) are available on figshare (https://doi.org/10.6084/m9.figshare.33549025).
+> The street-level images used for arcade detection were obtained through the Google Street View Static API
+> (https://developers.google.com/maps/documentation/streetview/overview) and cannot be redistributed under Google's
+> terms of use; the detection probes, their training labels and the sampling conventions are included in the code
+> repository. The monthly passenger volumes by bus stop and train station and by origin-destination used for the
+> pedestrian-flow model are published by the Land Transport Authority of Singapore on LTA DataMall
+> (https://datamall.lta.gov.sg/content/datamall/en/dynamic-data.html) under the Singapore Open Data Licence.
+> Derived products (hourly shadow rasters, covered-linkway polygons, arcade vectors, the reconstructed pedestrian
+> network and pedestrian flows) can be regenerated with the code and are available from the corresponding author
+> on request.
 
 Please cite the ShadeWalk paper (reference to be added on publication) and this repository (`CITATION.cff`).
 The shadow engine builds on SOLWEIG-GPU (Kamath et al., 2026, JOSS) and SOLWEIG (Lindberg et al., 2008); the flow
