@@ -93,7 +93,7 @@ latest version; each release also has its own version DOI:
 | Release | Tag | Version DOI | Content |
 |---|---|---|---|
 | 1.0.0 (2026-09-10) | `v1.0.0` | [10.5281/zenodo.22688710](https://doi.org/10.5281/zenodo.22688710) | first public release |
-| 1.0.1 (2026-09-11) | `v1.0.1` | assigned by Zenodo when the GitHub release is published (see the Zenodo record) | documentation update: open-data source descriptions, links to the figshare data record, input-only data-record wording |
+| 1.0.1 (2026-09-11) | `v1.0.1` | [10.5281/zenodo.22694699](https://doi.org/10.5281/zenodo.22694699) | documentation update: open-data source descriptions, links to the figshare data record, input-only data-record wording |
 
 The input data are archived on figshare: [10.6084/m9.figshare.33549025](https://doi.org/10.6084/m9.figshare.33549025) (the DOI without a `.vN` suffix
 always resolves to the latest version of the data record).

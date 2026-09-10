@@ -15,8 +15,11 @@ identifiers:
     value: 10.5281/zenodo.22688710
     description: "Zenodo archive of version 1.0.0 (tag v1.0.0)"
   - type: doi
+    value: 10.5281/zenodo.22694699
+    description: "Zenodo archive of version 1.0.1 (tag v1.0.1)"
+  - type: doi
     value: 10.5281/zenodo.22688709
-    description: "Zenodo concept DOI (always resolves to the latest version; the version 1.0.1 DOI is listed on the Zenodo record)"
+    description: "Zenodo concept DOI (always resolves to the latest version)"
 license: MIT
 keywords:
   - urban shade
