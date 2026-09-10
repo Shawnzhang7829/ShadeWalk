@@ -85,20 +85,28 @@ All Python scripts were checked to be syntactically valid and, except for the pa
 `PROVENANCE.md`, to be identical in logic to the scripts that generated the published results (abstract-syntax-tree
 comparison with string constants masked; comments, docstrings and messages were translated to English).
 
-## Citation and archived version
+## Citation and archived versions
 
-The code is archived on Zenodo. Version 1.0.0 (this release, tag `v1.0.0`) has the DOI
-[10.5281/zenodo.22688710](https://doi.org/10.5281/zenodo.22688710); the concept DOI
-[10.5281/zenodo.22688709](https://doi.org/10.5281/zenodo.22688709) always resolves to the latest version.
+The code is archived on Zenodo. The concept DOI [10.5281/zenodo.22688709](https://doi.org/10.5281/zenodo.22688709) always resolves to the
+latest version; each release also has its own version DOI:
 
-The input data are archived on figshare: [10.6084/m9.figshare.33549025](https://doi.org/10.6084/m9.figshare.33549025).
+| Release | Tag | Version DOI | Content |
+|---|---|---|---|
+| 1.0.0 (2026-09-10) | `v1.0.0` | [10.5281/zenodo.22688710](https://doi.org/10.5281/zenodo.22688710) | first public release |
+| 1.0.1 (2026-09-11) | `v1.0.1` | assigned by Zenodo when the GitHub release is published (see the Zenodo record) | documentation update: open-data source descriptions, links to the figshare data record, input-only data-record wording |
 
-Suggested code-availability statement:
+The input data are archived on figshare: [10.6084/m9.figshare.33549025](https://doi.org/10.6084/m9.figshare.33549025) (the DOI without a `.vN` suffix
+always resolves to the latest version of the data record).
 
-> The code of the ShadeWalk pipeline (shade-facility extraction, facility-aware SOLWEIG-GPU shadow modelling,
-> pedestrian-network reconstruction and coolest-route pedestrian-flow mapping) is openly available at
-> https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (version 1.0.0,
-> https://doi.org/10.5281/zenodo.22688710). The input datasets are available on figshare (https://doi.org/10.6084/m9.figshare.33549025).
+Suggested availability statements (cite the version DOI of the release used for the paper):
+
+> Code availability: The code of the ShadeWalk pipeline (shade-facility extraction, facility-aware SOLWEIG-GPU
+> shadow modelling, pedestrian-network reconstruction and coolest-route pedestrian-flow mapping) is openly available
+> at https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (https://doi.org/10.5281/zenodo.22688709; version 1.0.1).
+>
+> Data availability: The input datasets (shadow-model rasters, covered-linkway training tiles, transit and building
+> layers) are available on figshare (https://doi.org/10.6084/m9.figshare.33549025). Derived products can be regenerated with the code and
+> are available from the corresponding author on request.
 
 Please cite the ShadeWalk paper (reference to be added on publication) and this repository (`CITATION.cff`).
 The shadow engine builds on SOLWEIG-GPU (Kamath et al., 2026, JOSS) and SOLWEIG (Lindberg et al., 2008); the flow
