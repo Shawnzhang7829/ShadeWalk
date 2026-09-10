@@ -6,25 +6,31 @@ Code for **ShadeWalk**: city-scale mapping of artificial shade facilities (arcad
 linkways), facility-aware hourly shadow modelling, reconstruction of a shade-aware pedestrian network, and
 coolest-route pedestrian-flow mapping for Singapore (with Bologna as a second study city for the arcade detector).
 
-![ShadeWalk method workflow](docs/core_workflow.png)
+![ShadeWalk method workflow](Coding/docs/core_workflow.png)
 
 *Full method workflow. Data sources (left) feed seven algorithms (middle) that produce the three core computations
-(shade, network, graph / route) behind the ShadeWalk web tool (right). Vector version: `docs/core_workflow.svg`.*
+(shade, network, graph / route) behind the ShadeWalk web tool (right). Vector version: `Coding/docs/core_workflow.svg`.*
+
+## Repository layout
+
+All pipeline code lives in `Coding/` (one folder per module, numbered in pipeline order, plus `Coding/docs/`
+and `Coding/PROVENANCE.md`); the repository root holds only this README, the licence, the citation metadata
+and the Zenodo metadata. A `Dataset/` folder is reserved for a future sample-data release and is currently empty.
 
 ## Modules
 
 | Folder | Algorithm in the workflow figure | What it does | Environment |
 |---|---|---|---|
-| [`1_SOLWEIG_GPU (ADSM LDSM)`](<1_SOLWEIG_GPU (ADSM LDSM)/README.md>) | 1 SOLWEIG_GPU (LDSM, ADSM) | GPU shadow model (fork of SOLWEIG-GPU v1.2.21) extended with covered-linkway (LDSM) and arcade (ADSM / ADSMB) shading layers and a 13-class hourly shadow category | B |
-| [`2_Covered Linkway Extraction`](<2_Covered Linkway Extraction/README.md>) | 2 Covered-linkway (GeoSAM + LoRA + clDice + Focal-Tversky) | Segmentation of covered-linkway roofs from 0.3 m satellite imagery; includes the annotated training dataset (1,111 tiles) and the trained lean checkpoint | C |
-| [`3_Arcade Extraction and Projection/a_GSV Image Arcade Detection`](<3_Arcade Extraction and Projection/a_GSV Image Arcade Detection/README.md>) | 3 Arcade detection (CLIP ViT-L/14 + probe) | Detection of arcades in street-view images with CLIP embeddings and linear probes; includes the probes and their training labels | B |
-| [`3_Arcade Extraction and Projection/b_Arcade Projection to Building Footprint`](<3_Arcade Extraction and Projection/b_Arcade Projection to Building Footprint/README.md>) | 4 Facade projection (1.5-3 m arcade) | Ray-casting projection of positive views onto street-facing facades, edge-based arcade decision, 2 m / 3 m arcade strips and remaining building footprints | A |
-| [`5_OSM Network Reconstruction`](<5_OSM Network Reconstruction/README.md>) | 5 Network rebuild (+ facility centrelines) | Insertion of arcade and linkway centrelines into the OSM pedestrian network with rule-based cleaning and connection | A |
-| [`4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)`](<4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/README.md>) | 6 Routing cost (rho = (1 - sigma) + lambda) | Per-edge shade, shortest vs coolest routing, lambda / detour sensitivity, station-anchored flows; generators and English build of the ShadeWalk web tool | A |
-| [`4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)`](<4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)/README.md>) | 7 Pedestrian flow (gravity OD, Huff, Dijkstra) | madina patronage betweenness: hourly transit ridership distributed to buildings weighted by floor area and occupancy schedules | A |
+| [`Coding/1_SOLWEIG_GPU (ADSM LDSM)`](<Coding/1_SOLWEIG_GPU (ADSM LDSM)/README.md>) | 1 SOLWEIG_GPU (LDSM, ADSM) | GPU shadow model (fork of SOLWEIG-GPU v1.2.21) extended with covered-linkway (LDSM) and arcade (ADSM / ADSMB) shading layers and a 13-class hourly shadow category | B |
+| [`Coding/2_Covered Linkway Extraction`](<Coding/2_Covered Linkway Extraction/README.md>) | 2 Covered-linkway (GeoSAM + LoRA + clDice + Focal-Tversky) | Segmentation of covered-linkway roofs from 0.3 m satellite imagery; includes the annotated training dataset (1,111 tiles) and the trained lean checkpoint | C |
+| [`Coding/3_Arcade Extraction and Projection/a_GSV Image Arcade Detection`](<Coding/3_Arcade Extraction and Projection/a_GSV Image Arcade Detection/README.md>) | 3 Arcade detection (CLIP ViT-L/14 + probe) | Detection of arcades in street-view images with CLIP embeddings and linear probes; includes the probes and their training labels | B |
+| [`Coding/3_Arcade Extraction and Projection/b_Arcade Projection to Building Footprint`](<Coding/3_Arcade Extraction and Projection/b_Arcade Projection to Building Footprint/README.md>) | 4 Facade projection (1.5-3 m arcade) | Ray-casting projection of positive views onto street-facing facades, edge-based arcade decision, 2 m / 3 m arcade strips and remaining building footprints | A |
+| [`Coding/5_OSM Network Reconstruction`](<Coding/5_OSM Network Reconstruction/README.md>) | 5 Network rebuild (+ facility centrelines) | Insertion of arcade and linkway centrelines into the OSM pedestrian network with rule-based cleaning and connection | A |
+| [`Coding/4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)`](<Coding/4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/README.md>) | 6 Routing cost (rho = (1 - sigma) + lambda) | Per-edge shade, shortest vs coolest routing, lambda / detour sensitivity, station-anchored flows; generators and English build of the ShadeWalk web tool | A |
+| [`Coding/4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)`](<Coding/4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)/README.md>) | 7 Pedestrian flow (gravity OD, Huff, Dijkstra) | madina patronage betweenness: hourly transit ridership distributed to buildings weighted by floor area and occupancy schedules | A |
 
 Environments A (GIS, Python 3.11), B (QGIS Python 3.12 with torch) and C (conda `sam2`, Python 3.10) are
-specified in [`docs/ENVIRONMENTS.md`](docs/ENVIRONMENTS.md).
+specified in [`Coding/docs/ENVIRONMENTS.md`](Coding/docs/ENVIRONMENTS.md).
 
 ## Data flow between the modules
 
@@ -59,7 +65,7 @@ accompanying the paper.
 The scripts are the ones that produced the results of the paper and keep the absolute paths of the original
 workstation in the constants at the top of each file (`ROOT`, `OUT`, `BASE`, `TIF`, ...). Edit those constants to
 your data layout before running; the module READMEs give the run order and the expected run times. Third-party
-models are downloaded as described in `docs/ENVIRONMENTS.md`.
+models are downloaded as described in `Coding/docs/ENVIRONMENTS.md`.
 
 Verification performed on the released code (2026-09-10, on the original workstation):
 
@@ -74,7 +80,7 @@ Verification performed on the released code (2026-09-10, on the original worksta
 | 5 | full Singapore network reconstruction chain (6 stages) | identical to the published layers at every stage: 15,873 / 16,467 / 404,613 / 400,151 / 459,646 / 469,434 segments, same source composition and segment lengths |
 
 All Python scripts were checked to be syntactically valid and, except for the path adaptations listed in
-`PROVENANCE.md`, to be identical in logic to the scripts that generated the published results (abstract-syntax-tree
+`Coding/PROVENANCE.md`, to be identical in logic to the scripts that generated the published results (abstract-syntax-tree
 comparison with string constants masked; comments, docstrings and messages were translated to English).
 
 ## Citation and archived version
