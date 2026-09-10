@@ -18,7 +18,3 @@ _manifest.json
 output_folder/
 processed_inputs/
 *.tif.aux.xml
-
-# Local folders that are not part of the release
-/Dataset/
-/【发布ShadeWalk工具】/

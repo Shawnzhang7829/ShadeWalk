@@ -1,8 +1,7 @@
 # Provenance
 
 Every file of this repository was copied from the working folders of the original workstation on 2026-09-10.
-The table gives the original location of each file (or file group); repository paths are relative to the
-`Coding/` folder. Python scripts were translated to English
+The table gives the original location of each file (or file group). Python scripts were translated to English
 (comments, docstrings and message strings only) and verified to be identical in logic to the originals by an
 abstract-syntax-tree comparison; the few files that were edited beyond that are listed first.
 
