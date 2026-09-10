@@ -25,4 +25,4 @@
 | `covered_linkway_SG_island_tv_pednet.gpkg/.tif` | after the 5 m pedestrian-network filter (6,323 polygons, `pednet_overlap_ratio`) |
 | `covered_linkway_SG_island_tv_pednet_bridged.gpkg/.tif` | FINAL: 6,148 polygons, 1.66 km2, field `area_m2`; input of Module 1 (LDSM) and Module 5 (facility centrelines) |
 
-The derived products below are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request.
+The products above are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request.
