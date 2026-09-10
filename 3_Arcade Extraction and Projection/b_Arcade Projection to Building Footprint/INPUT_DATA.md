@@ -23,7 +23,9 @@ Parameters (defined at the top of the scripts):
 | `buf` | 2.0 m (SG, GZ), 3.0 m (BO) | `step2_buffer_split.py` |
 | `arc_h` | 3.6 m default, capped by the building height | `step2_buffer_split.py` |
 
-## Products (data repository)
+## Products
+
+The derived products below are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request.
 
 | File | Geometry | Fields |
 |---|---|---|

@@ -22,7 +22,9 @@ Parameters: `LAM` 0.15 (routing script) / 0.2 (paper, lambda sweep), `BETA` 350 
 `D_BUS` 400 m, `SNAP_MAX` 120 m, minimum shortest length 20 m, 2 m sampling step along edges, sun position of
 13:30 for the half-hour-centred 14:00 shadow.
 
-## Products (data repository)
+## Products
+
+The derived products below are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request.
 
 | File | Content |
 |---|---|

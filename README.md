@@ -14,8 +14,8 @@ coolest-route pedestrian-flow mapping for Singapore (with Bologna as a second st
 ## Repository layout
 
 One folder per module, numbered in pipeline order, plus `docs/` (workflow figure, software environments)
-and `PROVENANCE.md` (origin of every file). Code is kept in this repository; the large input and output datasets
-are distributed through the Zenodo data record of the paper (see the `INPUT_DATA.md` files).
+and `PROVENANCE.md` (origin of every file). Code is kept in this repository; the input datasets are distributed
+through the Zenodo data record of the paper (see the `INPUT_DATA.md` files).
 
 ## Modules
 
@@ -57,8 +57,9 @@ files, and the documentation.
 Not included (size or licence): raw imagery (Google satellite basemap tiles, Google Street View images), the
 city-wide 1 m rasters (DEM, canopy, building DSM, 24-band shadow / category outputs), LTA and OSM source layers,
 the SAM ViT-H weights, and the derived vector / raster products of each module. Their sources and specifications
-are listed in the `INPUT_DATA.md` files; the derived products are distributed through the data repository
-accompanying the paper.
+are listed in the `INPUT_DATA.md` files. The input layers (shadow-model rasters, covered-linkway training tiles,
+transit and building layers, cleaned OSM lines) are released in the Zenodo data record accompanying the paper;
+the derived products are regenerated from them with this code and are available from the corresponding author on request.
 
 ## Running the code
 

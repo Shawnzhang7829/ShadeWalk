@@ -33,7 +33,9 @@
 The `path` columns contain the original absolute image paths of the workstation; only the file name part is
 needed to locate an image.
 
-## Outputs (data repository)
+## Outputs
+
+The derived products below are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request.
 
 `detect_<city>.csv`, `arcade_<city>_positive.csv` (reference implementation) and the production files
 `colonnade_<city>_v2.csv` / `colonnade_<city>_v2_positive.csv` (28,908 positive views in Singapore, 35,442 in
