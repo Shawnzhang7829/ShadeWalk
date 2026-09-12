@@ -269,6 +269,6 @@ inside string literals; only their comments and docstrings were translated:
 
 | Repository file | Original location | Note |
 |---|---|---|
-| `docs/core_workflow.png` | `C:\Users\City Syntax Lab\AppData\Local\Temp\claude\D--Claude-ShadeWalk\836ce0db-5a38-4784-ae86-72e025ad2066\scratchpad\fig\core_workflow_4col_hi.png` | rendered from paper_figures core_workflow_4col.emf (2026-09-07) |
-| `docs/core_workflow.svg` | `C:\Users\City Syntax Lab\AppData\Local\Temp\claude\D--Claude-ShadeWalk\836ce0db-5a38-4784-ae86-72e025ad2066\scratchpad\fig\core_workflow_4col_from_emf.svg` | rendered from paper_figures core_workflow_4col.emf (2026-09-07) |
+| `docs/core_workflow.png` | paper_figures 0912 v3 `1.pptx`, native shape group exported with PowerPoint 16.0 on a slide with a 6 pt margin (2026-09-12) | PNG written by PowerPoint (2600 px wide, white background) |
+| `docs/core_workflow.svg` | paper_figures 0912 v3 `1.pptx`, native shape group exported with PowerPoint 16.0 on a slide with a 6 pt margin (2026-09-12) | EMF written by PowerPoint, converted to plain SVG with Inkscape 1.x |
 
