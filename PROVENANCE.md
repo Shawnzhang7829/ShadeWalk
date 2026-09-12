@@ -269,6 +269,6 @@ inside string literals; only their comments and docstrings were translated:
 
 | Repository file | Original location | Note |
 |---|---|---|
-| `docs/core_workflow.png` | paper_figures 0912 v4 `core_workflow_4col.pptx` (slide 1, the figure embedded in `1.pptx`), native shape group exported with PowerPoint 16.0 on a slide with a 6 pt margin (2026-09-12) | PNG written by PowerPoint (2600 px wide, white background) |
-| `docs/core_workflow.svg` | paper_figures 0912 v4 `core_workflow_4col.pptx` (slide 1, the figure embedded in `1.pptx`), native shape group exported with PowerPoint 16.0 on a slide with a 6 pt margin (2026-09-12) | EMF written by PowerPoint, converted to plain SVG with Inkscape 1.x |
+| `docs/core_workflow.png` | paper_figures 0912 v4 `core_workflow_4col.pptx` slide 1 (the figure delivered as `2.pptx`), native shape group exported with PowerPoint 16.0 inside its own theme with a 6 pt transparent margin (2026-09-12) | PNG written by PowerPoint (2600 px wide, white background) |
+| `docs/core_workflow.svg` | paper_figures 0912 v4 `core_workflow_4col.pptx` slide 1 (the figure delivered as `2.pptx`), native shape group exported with PowerPoint 16.0 inside its own theme with a 6 pt transparent margin (2026-09-12) | EMF written by PowerPoint, converted to plain SVG with Inkscape 1.x |
 
