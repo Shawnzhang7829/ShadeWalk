@@ -5,12 +5,13 @@
   "creators": [
     {
       "name": "Zhang, Shuyang",
-      "orcid": "0000-0002-3677-1363"
+      "orcid": "0000-0002-3677-1363",
+      "affiliation": "National University of Singapore"
     }
   ],
   "license": "MIT",
   "access_right": "open",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "language": "eng",
   "keywords": [
     "urban shade",

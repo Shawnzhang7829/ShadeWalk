@@ -7,9 +7,10 @@ authors:
     given-names: Shuyang
     alias: Shawn Zhang
     orcid: "https://orcid.org/0000-0002-3677-1363"
+    affiliation: "National University of Singapore"
 repository-code: "https://github.com/Shawnzhang7829/ShadeWalk"
-version: "1.0.1"
-date-released: "2026-09-11"
+version: "1.0.2"
+date-released: "2026-09-12"
 doi: 10.5281/zenodo.22688709
 identifiers:
   - type: doi
