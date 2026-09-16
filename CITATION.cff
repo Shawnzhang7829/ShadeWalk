@@ -9,8 +9,8 @@ authors:
     orcid: "https://orcid.org/0000-0002-3677-1363"
     affiliation: "National University of Singapore"
 repository-code: "https://github.com/Shawnzhang7829/ShadeWalk"
-version: "1.0.2"
-date-released: "2026-09-12"
+version: "1.0.3"
+date-released: "2026-09-16"
 doi: 10.5281/zenodo.22688709
 identifiers:
   - type: doi
