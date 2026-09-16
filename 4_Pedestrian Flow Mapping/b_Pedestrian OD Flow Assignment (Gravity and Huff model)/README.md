@@ -22,7 +22,8 @@ bus and rail are run as two sub-passes with their own radius and added.
 
 Ridership handling: LTA volumes are monthly totals and are divided by 22 weekdays / 9 weekend days; interchange
 codes such as `NS24/NE6/CC1` are split and their volume divided by the number of parts; MRT ridership is divided
-equally over the physical exits of the station (`n_exits`). `RIDERSHIP_MODE = "both"` injects tap-in + tap-out;
+equally over the physical exits of the station (`n_exits`); the few bus-stop codes that occur twice in the stop shapefile
+share their volume over their rows. Module 4a must use the per-row share `inj_*` of the export, never `tot_*`. `RIDERSHIP_MODE = "both"` injects tap-in + tap-out;
 `Main_dualpass.py` runs the true dual pass instead (stations -> buildings with tap-out, buildings -> stations with
 tap-in, summed). Origins that are not in the active sub-pass are deactivated before each betweenness call
 (about 3x faster).

@@ -10,6 +10,9 @@ abstract-syntax-tree comparison; the few files that were edited beyond that are 
 | Repository file | Edit |
 |---|---|
 | `2_Covered Linkway Extraction/train/train_autonomous_v2.py` | sys.path insert made repo-relative (imports the shared module from the same folder) |
+| `4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/scripts/03_routing_flow/step4_4c_city_routing.py`, `step4_4c_orig_flow.py`, `step4_4c_orig_coolflow.py`, `step4_4e_flow_detour.py`, `step4_4f_flow_lam.py` | bug fix 2026-09-16: origin weight = `inj_weekday_14` (per-exit share) instead of `tot_weekday_14`, which the station export repeats on every exit row of a station (the originals injected the whole station's ridership at each exit) |
+| `4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/webapp/make_nav_app_maplibre.py` | bug fix 2026-09-16: station dot size and hourly ratios from the per-exit shares (`tot_weekday_total / n_exits`, `inj_weekday_HH`) |
+| `4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)/Patronage_Flow/Network.py` | fix 2026-09-16: `weight_divisor` of bus stops = number of shapefile rows with the same code (18 codes occur twice), so a duplicated stop no longer injects its volume twice |
 | `2_Covered Linkway Extraction/train/train_autonomous_tversky.py` | sys.path insert made repo-relative |
 | `2_Covered Linkway Extraction/inference/inference_autonomous_island.py` | two machine-specific sys.path inserts replaced by one repo-relative insert of ../train |
 | `2_Covered Linkway Extraction/inference/inference_autonomous.py` | two machine-specific sys.path inserts replaced by one repo-relative insert of ../train |

@@ -111,7 +111,8 @@ def load_bus_stations(bbox=None) -> gpd.GeoDataFrame:
     gdf = gdf[["BUS_STOP_N", "geometry"]].rename(columns={"BUS_STOP_N": "PT_CODE"})
     gdf["PT_CODE"] = gdf["PT_CODE"].astype(str)
     gdf["source"] = "BUS"
-    gdf["weight_divisor"] = 1.0   # bus stops are single-point origins
+    # fix 2026-09-16: a few bus-stop codes occur twice in the shapefile; the stop's volume is shared over its rows
+    gdf["weight_divisor"] = gdf.groupby("PT_CODE")["PT_CODE"].transform("size").astype(float)
     n0 = len(gdf)
     gdf = _filter_to_border(gdf, predicate="within").reset_index(drop=True)
     print(f"[network] bus stops: {n0:,} -> {len(gdf):,} after border filter")

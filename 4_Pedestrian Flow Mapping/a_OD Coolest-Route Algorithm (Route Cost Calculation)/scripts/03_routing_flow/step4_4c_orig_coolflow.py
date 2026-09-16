@@ -41,10 +41,15 @@ for k in range(len(bw)):
     if bd[k] <= SNAP_MAX and np.isfinite(bw_w[k]) and bw_w[k] > 0 and int(bi[k]) in G:
         node_blds[int(bi[k])].append(float(bw_w[k])); nb += 1
 st = gpd.read_file(ST).to_crs(3414); si, sd = snap_many(st.geometry)
+# Origin weight (fix of 2026-09-16): the station export has one row per MRT/LRT exit, and tot_* holds the whole station
+# on every exit row; the per-origin weight is inj_* = tot / n_exits (exports before 2026-09-16 also double-count
+# interchange line codes; use an export of Module 4b that splits them, or station_hourly_ridership_v2.gpkg).
+_w=(st['inj_weekday_14'].values if 'inj_weekday_14' in st.columns else st['tot_weekday_14'].values/np.where(np.nan_to_num(st['n_exits'].values,nan=1)>0,np.nan_to_num(st['n_exits'].values,nan=1),1)).astype(float)
+st['w_origin']=_w; print(f'origin weights: {len(st)} rows, sum 14:00 = {np.nansum(_w):,.0f} (per-exit shares)',flush=True)
 stas = []
 for k in range(len(st)):
-    if sd[k] <= SNAP_MAX and np.isfinite(st.tot_weekday_14.values[k]) and st.tot_weekday_14.values[k] > 0 and int(si[k]) in G:
-        stas.append((int(si[k]), float(st.tot_weekday_14.values[k]), st.source.values[k]))
+    if sd[k] <= SNAP_MAX and np.isfinite(st.w_origin.values[k]) and st.w_origin.values[k] > 0 and int(si[k]) in G:
+        stas.append((int(si[k]), float(st.w_origin.values[k]), st.source.values[k]))
 print(f"snapped (original network): buildings {nb} | stations {len(stas)} | {time.time()-t0:.0f}s", flush=True)
 flow_c = collections.defaultdict(float)
 def pe(p): return [(p[i], p[i+1]) if p[i] < p[i+1] else (p[i+1], p[i]) for i in range(len(p)-1)]

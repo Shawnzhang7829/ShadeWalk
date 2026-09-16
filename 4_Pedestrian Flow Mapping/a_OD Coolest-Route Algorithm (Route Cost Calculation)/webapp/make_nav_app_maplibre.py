@@ -162,7 +162,8 @@ smx,smy=to_m(gs2.geometry.x.values,gs2.geometry.y.values)
 SX=np.round(smx-ox).astype(int); SY=np.round(smy-oy).astype(int)
 SSRC=(gs2['source'].astype(str).str.upper()=='MRT').astype(int).tolist()
 SCODE=gs2['PT_CODE'].astype(str).tolist()
-SRID=np.round(np.nan_to_num(gs2['tot_weekday_total'].values)).astype(int).tolist()
+_NEX=np.where(np.nan_to_num(gs2['n_exits'].values,nan=1)>0,np.nan_to_num(gs2['n_exits'].values,nan=1),1)   # fix 2026-09-16: tot_* is the station total on every exit row -> per-exit share
+SRID=np.round(np.nan_to_num(gs2['tot_weekday_total'].values)/_NEX).astype(int).tolist()
 print(f"站点{len(SX)} (MRT {sum(SSRC)}) | {time.time()-t0:.0f}s",flush=True)
 
 # all rasters inlined (self-contained, no server needed): tree 10 m PNG + shadow/class 40 m hourly frames (reusing the cache)
@@ -186,7 +187,7 @@ shadH=HL['shad']; catH=HL['cat']  # hourly shadow/class frames (08-18h, 11 frame
 print(f"内联栅格: 树木 @10m + 阴影/分类逐时 @10m({len(shadH)}帧) + 设施逐时比例 | {time.time()-t0:.0f}s",flush=True)
 # hourly scaling ratios for facility-served flow (citywide hourly station ridership relative to 14:00)
 def _sumtot(h):
-    c=f'tot_weekday_{h:02d}'; return float(np.nan_to_num(gs2[c].values).sum()) if c in gs2.columns else 0.0
+    c=f'inj_weekday_{h:02d}'; return float(np.nan_to_num(gs2[c].values).sum()) if c in gs2.columns else 0.0   # fix 2026-09-16: per-exit shares (inj_*) sum to the station totals
 _b14=_sumtot(14) or 1.0; FACR=[round(_sumtot(h)/_b14,3) for h in HL['hours']]
 print(f"设施逐时比例(相对14:00) {FACR} | {time.time()-t0:.0f}s",flush=True)
 
