@@ -113,7 +113,7 @@ latest version; each release also has its own version DOI:
 | 1.0.0 (2026-09-10) | `v1.0.0` | [10.5281/zenodo.22688710](https://doi.org/10.5281/zenodo.22688710) | first public release |
 | 1.0.1 (2026-09-11) | `v1.0.1` | [10.5281/zenodo.22694699](https://doi.org/10.5281/zenodo.22694699) | documentation update: open-data source descriptions, links to the figshare data record, input-only data-record wording |
 | 1.0.2 (2026-09-12) | `v1.0.2` | [10.5281/zenodo.22725730](https://doi.org/10.5281/zenodo.22725730) | documentation update: version DOIs, author ORCID and affiliation, precise building-layer provenance, open-data wording for Master Plan layers, extended data-availability statement, updated workflow figure |
-| 1.0.3 (2026-09-16) | `v1.0.3` | assigned by Zenodo when the GitHub release is published (see the Zenodo record) | Module 4 fix: per-exit station weights (`inj_*`) in the routing / flow scripts and the web-tool generator, duplicate bus-stop codes share their volume; meteorological forcing files removed (not redistributed); data-sources table; updated workflow figure |
+| 1.0.3 (2026-09-16) | `v1.0.3` | [10.5281/zenodo.22796965](https://doi.org/10.5281/zenodo.22796965) | Module 4 fix: per-exit station weights (`inj_*`) in the routing / flow scripts and the web-tool generator, duplicate bus-stop codes share their volume; meteorological forcing files removed (not redistributed); data-sources table; updated workflow figure |
 
 The input data are archived on figshare: [10.6084/m9.figshare.33549025](https://doi.org/10.6084/m9.figshare.33549025) (the DOI without a `.vN` suffix
 always resolves to the latest version of the data record).
