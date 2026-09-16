@@ -63,16 +63,16 @@ refers to the folders above, and the `INPUT_DATA.md` of each module gives the fu
 | Pedestrian network | OpenStreetMap `highway` extract of Singapore (June 2026), cleaned to 404,613 pedestrian-passable segments | OpenStreetMap contributors, ODbL | 5 (network reconstruction), 4b (flow model), 2 (network filter) | figshare `5_base_data/SG_osm_lines.gpkg` |
 | Public transport: stops, stations and passenger volumes | Bus stop locations (Aug 2025), MRT / LRT stations (Aug 2025) and station exits (Feb 2025); monthly passenger volumes by bus stop and train station and by origin-destination (hourly tap-in / tap-out) | Land Transport Authority of Singapore, LTA DataMall, Singapore Open Data Licence | 4b (demand origins; 4a uses its station-ridership export) | locations: figshare `4_OD_flow/Station_Location.zip`; volumes: https://datamall.lta.gov.sg/content/datamall/en/dynamic-data.html (also in figshare `4_OD_flow.txt`) |
 | Building occupancy schedules | 20 EnergyPlus archetype models (SGP 2025 V5): people per floor area and hourly occupancy schedules per building type | Singapore building-archetype models (SGP 2025 V5) | 4b (hourly destination weights of the gravity model; 4a uses its building-weight export) | figshare `4_OD_flow/AllArhcetypes_SGP_2025_V5.zip` |
-| Meteorological forcing | Hourly UMEP-format forcing of station S50 (Clementi Road): 2026-03-01 (paper run) and the four equinox / solstice days | Meteorological Service Singapore | 1 (shadow model) | this repository, `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing` |
+| Meteorological forcing | Hourly UMEP-format forcing of station S50 (Clementi Road): 2026-03-01 (paper run) and the four equinox / solstice days | Meteorological Service Singapore (not redistributed) | 1 (shadow model) | from the provider; format described in `1_SOLWEIG_GPU (ADSM LDSM)/upstream_docs/input_data.md` |
 
 ## What is and is not in this repository
 
 Included: all pipeline code, the modified SOLWEIG-GPU package with a patch against upstream, the covered-linkway
 training annotations (LabelMe polygons, masks, tile grid), the arcade-probe models and their label files, the
-trained covered-linkway checkpoint (27 MB), the English build of the web tool (gzip), the meteorological forcing
-files, and the documentation.
+trained covered-linkway checkpoint (27 MB), the English build of the web tool (gzip), and the documentation.
 
 Not included (size or licence): raw imagery (Google satellite basemap tiles, Google Street View images), the
+meteorological forcing files (Meteorological Service Singapore), the
 city-wide 1 m rasters (DEM, canopy, building DSM, 24-band shadow / category outputs), LTA and OSM source layers,
 the SAM ViT-H weights, and the derived vector / raster products of each module. Their sources and specifications
 are listed in the `INPUT_DATA.md` files. The input layers (shadow-model rasters, covered-linkway training tiles,

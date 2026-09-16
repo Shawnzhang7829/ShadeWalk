@@ -9,6 +9,7 @@ abstract-syntax-tree comparison; the few files that were edited beyond that are 
 
 | Repository file | Edit |
 |---|---|
+| `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing/*` | removed on 2026-09-16: the five Meteorological Service Singapore forcing files are not redistributed (present in releases 1.0.0 to 1.0.2) |
 | `2_Covered Linkway Extraction/train/train_autonomous_v2.py` | sys.path insert made repo-relative (imports the shared module from the same folder) |
 | `4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/scripts/03_routing_flow/step4_4c_city_routing.py`, `step4_4c_orig_flow.py`, `step4_4c_orig_coolflow.py`, `step4_4e_flow_detour.py`, `step4_4f_flow_lam.py` | bug fix 2026-09-16: origin weight = `inj_weekday_14` (per-exit share) instead of `tot_weekday_14`, which the station export repeats on every exit row of a station (the originals injected the whole station's ridership at each exit) |
 | `4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/webapp/make_nav_app_maplibre.py` | bug fix 2026-09-16: station dot size and hourly ratios from the per-exit shares (`tot_weekday_total / n_exits`, `inj_weekday_HH`) |
@@ -89,11 +90,6 @@ inside string literals; only their comments and docstrings were translated:
 | `1_SOLWEIG_GPU (ADSM LDSM)/scripts/03_merge_and_stats/step3g_make_preview.py` | `D:\Claude\SVI_FFW\output\step3_adsm\step3g_make_preview.py` |  |
 | `1_SOLWEIG_GPU (ADSM LDSM)/scripts/03_merge_and_stats/step3g_b_preview_13cls.py` | `D:\Claude\SVI_FFW\output\step3_adsm\step3g_b_preview_13cls.py` |  |
 | `1_SOLWEIG_GPU (ADSM LDSM)/scripts/03_merge_and_stats/extract_h11_h15.py` | `D:\Claude\SVI_FFW\TIF_shadow_newarcade\merge_images\_extract_h12_h13\extract_h11_h15.py` |  |
-| `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing/S50_Clementi Road.txt` | `D:\Claude\SVI_FFW\TIF_shadow_newarcade\Forcing_data\S50_Clementi Road.txt` | UMEP-format meteorological forcing (S50 Clementi Road) |
-| `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing/S50_Clementi Road_2026-03-20_spring_equinox_doy79.txt` | `D:\Claude\SVI_FFW\TIF_shadow_newarcade\Forcing_data\S50_Clementi Road_2026-03-20_spring_equinox_doy79.txt` | UMEP-format meteorological forcing (S50 Clementi Road) |
-| `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing/S50_Clementi Road_2026-06-21_summer_solstice_doy172.txt` | `D:\Claude\SVI_FFW\TIF_shadow_newarcade\Forcing_data\S50_Clementi Road_2026-06-21_summer_solstice_doy172.txt` | UMEP-format meteorological forcing (S50 Clementi Road) |
-| `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing/S50_Clementi Road_2026-09-23_autumn_equinox_doy266.txt` | `D:\Claude\SVI_FFW\TIF_shadow_newarcade\Forcing_data\S50_Clementi Road_2026-09-23_autumn_equinox_doy266.txt` | UMEP-format meteorological forcing (S50 Clementi Road) |
-| `1_SOLWEIG_GPU (ADSM LDSM)/sample_data/forcing/S50_Clementi Road_2026-12-22_winter_solstice_doy356.txt` | `D:\Claude\SVI_FFW\TIF_shadow_newarcade\Forcing_data\S50_Clementi Road_2026-12-22_winter_solstice_doy356.txt` | UMEP-format meteorological forcing (S50 Clementi Road) |
 
 ### 2_Covered Linkway Extraction
 
