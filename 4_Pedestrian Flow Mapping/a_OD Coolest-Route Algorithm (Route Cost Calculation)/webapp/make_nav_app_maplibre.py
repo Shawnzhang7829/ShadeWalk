@@ -27,7 +27,7 @@ TO=Transformer.from_crs(3414,3857,always_xy=True)
 def to_m(xs,ys):
     a,b=TO.transform(np.asarray(xs,float),np.asarray(ys,float)); return np.asarray(a),np.asarray(b)
 t0=time.time()
-e=gpd.read_file(f"{OUT}\\step4_4_edges_flow_SG.gpkg"); e=e[e['comp']==0].reset_index(drop=True)
+e=gpd.read_file(f"{OUT}\\step4_4_edges_flow_SG.gpkg"); _C0=(e['comp']==0).values; e=e[_C0].reset_index(drop=True)
 nd=gpd.read_file(f"{OUT}\\step4_4_nodes_SG.gpkg"); maxid=int(nd['node'].max())
 CX=np.full(maxid+1,np.nan); CY=np.full(maxid+1,np.nan)
 CX[nd['node'].values]=nd.geometry.x.values; CY[nd['node'].values]=nd.geometry.y.values
@@ -183,6 +183,12 @@ else:
     treeImg=png_uri(trg); EXT_T=ext3857([cb.left,cb.bottom,cb.right,cb.top])
     json.dump({'t':treeImg,'et':EXT_T},open(_RCACHE,'w'))
 shadH=HL['shad']; catH=HL['cat']  # hourly shadow/class frames (08-18h, 11 frames @10 m)
+_ESHZ=np.load(f"{OUT}\\edge_shade_hourly_SG.npz")  # 0917 逐时边遮荫(step4_4b_city_edge_shade_hourly.py: 8-18 点,口径同 shade_full,全表行序)
+ESH=[np.clip(np.round(np.nan_to_num(_ESHZ[f"h{int(h):02d}"][_C0])*100),0,100).astype(np.uint8) for h in HL['hours']]
+_d14=np.abs(np.nan_to_num(_ESHZ["h14"][_C0])-np.nan_to_num(e['shade_full'].values)).max()
+assert _d14<1e-6, f"edge_shade_hourly_SG.npz 的 14:00 层与 gpkg shade_full 不一致(max diff {_d14:.3g}):用同一 BREMAIN 掩膜重算(step4_4b_city_edge_shade_hourly.py --brem)"
+ESH[HL['hours'].index(14)]=ES.astype(np.uint8)  # the embedded 14:00 frame is the canonical es array itself (float layers are equal; rounding ties could otherwise differ by 1)
+print(f"逐时边遮荫 {len(ESH)} 帧(8-18点) | 14:00 帧 = shade_full | {time.time()-t0:.0f}s",flush=True)
 print(f"内联栅格: 树木 @10m + 阴影/分类逐时 @10m({len(shadH)}帧) + 设施逐时比例 | {time.time()-t0:.0f}s",flush=True)
 # hourly scaling ratios for facility-served flow (citywide hourly station ridership relative to 14:00)
 def _sumtot(h):
@@ -191,7 +197,7 @@ _b14=_sumtot(14) or 1.0; FACR=[round(_sumtot(h)/_b14,3) for h in HL['hours']]
 print(f"设施逐时比例(相对14:00) {FACR} | {time.time()-t0:.0f}s",flush=True)
 
 _demoOD=json.load(open(f"{OUT}\\_demo_scenarios.json",encoding='utf-8')) if os.path.exists(f"{OUT}\\_demo_scenarios.json") else {}
-data=dict(ox=ox,oy=oy,egeom=EGEOM,es=ES.tolist(),ef=EF.tolist(),efo=EFO.tolist(),eu=U.tolist(),ev=V.tolist(),el=EL.tolist(),efac=EFAC.tolist(),esrc=ESRC.tolist(),esn=ESN.tolist(),ft100=FT_[100].tolist(),ft120=FT_[120].tolist(),ft150=FT_[150].tolist(),ft200=FT_[200].tolist(),flam=FLAM,
+data=dict(ox=ox,oy=oy,egeom=EGEOM,es=ES.tolist(),ef=EF.tolist(),efo=EFO.tolist(),eu=U.tolist(),ev=V.tolist(),el=EL.tolist(),efac=EFAC.tolist(),esrc=ESRC.tolist(),esn=ESN.tolist(),esh=[base64.b64encode(a.tobytes()).decode() for a in ESH],ft100=FT_[100].tolist(),ft120=FT_[120].tolist(),ft150=FT_[150].tolist(),ft200=FT_[200].tolist(),flam=FLAM,
           nx=NX.tolist(),ny=NY.tolist(),arc=arcR,lkw=lkwR,bld=bldR,hdb=hdbR,bldH=bldH,arcBH=arcBH,tree3d=tree3d,arcF=arcF,lkwF=lkwF,facR=FACR,facnet=FACNET,demoOD=_demoOD,
           bcx=BCX.tolist(),bcy=BCY.tolist(),stx=SX.tolist(),sty=SY.tolist(),sts=SSRC,stc=SCODE,srid=SRID,
           treeImg=treeImg,extT=EXT_T,shadH=shadH,catH=catH,extS=EXT_S,extC=EXT_C,hours=HL['hours'],
@@ -282,7 +288,7 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <div class="sec" style="margin-bottom:5px">遮荫栅格 (10m)</div>
   <label class="lay"><input type="checkbox" id="lyShad"><span class="sw2" style="background:#2c7fb8"></span>阴影 Shadow(随滑杆)</label>
   <label class="lay"><input type="checkbox" id="lyCat"><span class="sw2" style="background:#d4322c"></span>分类 Category(随滑杆)</label>
-  <div class="sec" style="margin-top:8px;margin-bottom:4px">逐时 8–18点 · 阴影/分类栅格 + 设施人流 <b id="hrLbl" style="color:#1d1c1a">14:00</b></div>
+  <div class="sec" style="margin-top:8px;margin-bottom:4px" title="阴影/分类栅格、路网遮荫率与避热路由随时刻变化(8–18点);人流场按 14:00">日间时刻 <b id="hrLbl" style="color:#1d1c1a">14:00</b></div>
   <input type="range" id="hr" min="0" max="10" step="1" value="6" style="width:100%;margin-bottom:6px">
   <p class="sub" style="margin-top:13px">点击地图设起点/终点。最遮荫路=最小日晒里程;最短路=最短距离。栅格已内联(树木/阴影/分类均 ≈10m 单帧),双击即可打开,无需服务器。</p>
 </aside>
@@ -317,8 +323,10 @@ function edgeLL(g){let a=[];for(let k=0;k<g.length;k+=2)a.push(ll(g[k],g[k+1]));
 function ringLL(g){let a=[];for(let k=0;k<g.length;k+=2)a.push(ll(g[k],g[k+1]));a.push(a[0]);return a;}
 // 路由图
 const NE=D.eu.length,NN=D.nx.length,LAM=0.2,EL=D.el,ES=D.es,EF=D.ef,EFO=D.efo,U=D.eu,V=D.ev,ESRCC=D.esrc,EFACC=D.efac,ESNN=D.esn;
+const ESH=D.esh.map(function(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}),HR14=D.hours.indexOf(14);let HRI=HR14;  // 0917 hourly edge shade (base64 uint8 per hour, 08-18); HRI = index of the slider hour (14:00 = canonical shade_full)
 let SCN={arc:true,lkw:true};  // facility scenario: unchecking Arcades / Covered linkways layer boxes removes that facility from routing (its centerline edges banned) and falls back covered edges' shade to esn (buildings+trees only)
-function esf(ei){return ((EFACC[ei]===3&&!SCN.arc)||(EFACC[ei]===4&&!SCN.lkw))?ESNN[ei]:ES[ei];}
+function esh(ei){return HRI===HR14?ES[ei]:ESH[HRI][ei];}  // edge shade of the slider hour (14:00 = canonical shade_full)
+function esf(ei){var s=esh(ei);return ((EFACC[ei]===3&&!SCN.arc)||(EFACC[ei]===4&&!SCN.lkw))?(HRI===HR14?ESNN[ei]:Math.min(s,Math.round(s*ESNN[ei]/Math.max(1,ES[ei])))):s;}  // facility removed: 14:00 no-facility shade; other hours scaled by the hour/14:00 shade ratio (no hourly no-facility raster)
 function eban(ei){return ESRCC[ei]===1&&((EFACC[ei]===3&&!SCN.arc)||(EFACC[ei]===4&&!SCN.lkw));}
 const FT={1:D.ft100,1.2:D.ft120,1.5:D.ft150,2:D.ft200};  // per-Detour-limit heat-avoiding flow (step4_4e tau-capped assignment)
 function flowCur(){return flowKind==='short'?EF:(FT[DETOUR]||EF);}  // pedestrian-flow field: shortest routes (flow_short, fixed) or the heat-avoiding field of the current Detour limit
@@ -546,7 +554,7 @@ function catLegUpd(){var cl=document.getElementById('catleg');if(!document.getEl
  for(var k=1;k<=12;k++)h+='<span style="white-space:nowrap"><span class="sw" style="background:'+CATPAL[k]+'"></span>'+CATNM2[k]+'</span>';
  cl.innerHTML=h+'</div><div style="font-size:9px;color:#888;margin-top:2px">日晒像素透明;组合=被多种同时遮挡</div>';cl.style.display='block';}
 function hidx(){return +document.getElementById('hr').value;}
-document.getElementById('hr').oninput=function(){let h=hidx();document.getElementById('hrLbl').textContent=D.hours[h]+':00';if(map.getSource('ish'))map.getSource('ish').updateImage({url:D.shadH[h]});if(map.getSource('icat'))map.getSource('icat').updateImage({url:D.catH[h]});updateSunLight();catLegUpd();};
+document.getElementById('hr').oninput=function(){let h=hidx();document.getElementById('hrLbl').textContent=D.hours[h]+':00';if(map.getSource('ish'))map.getSource('ish').updateImage({url:D.shadH[h]});if(map.getSource('icat'))map.getSource('icat').updateImage({url:D.catH[h]});updateSunLight();catLegUpd();HRI=h;if(colorMode==='shade'||colorMode==='rho')redrawNet();if(O>=0&&Dst>=0)route();if(typeof topoOpen==='function'&&topoOpen())topoBuild(true);};  // 0917: network shade, routing and route cards follow the slider hour
 // selectable O/D points: stations + building centroids (click sets origin/dest; cached FC)
 let staFC=null,bldPtFC=null;
 function staGeo(){if(!staFC){let f=[];for(let i=0;i<D.stx.length;i++)f.push({type:'Feature',properties:{c:D.stc[i],m:D.sts[i],r:D.srid[i]},geometry:{type:'Point',coordinates:ll(D.stx[i],D.sty[i])}});staFC={type:'FeatureCollection',features:f};}return staFC;}
@@ -870,7 +878,7 @@ document.getElementById('dmClear').onclick=()=>{var a=svList();if(!a.length){tip
 document.getElementById('dmImport').onclick=()=>document.getElementById('dmFile').click();
 document.getElementById('dmFile').onchange=(e)=>{var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=()=>{try{var d=JSON.parse(r.result);var arr=Array.isArray(d)?d:((d&&typeof d==='object')?Object.keys(d).reduce(function(x,k){return x.concat(Array.isArray(d[k])?d[k]:[]);},[]):null);if(!arr){tip('导入失败:需 OD 数组或场景对象 json');return;}arr=arr.filter(function(p){return Array.isArray(p)&&p.length>=4&&typeof p[0]==='number'&&typeof p[3]==='number';});if(!arr.length){tip('导入失败:没有有效 OD');return;}importedOD=arr;myI=svList().length+((((D.demoOD||{}).my_saved)||[]).length);svUpd();tip('已导入 '+arr.length+' 条(临时,不入收藏)');document.getElementById('dmMine').click();}catch(ex){tip('JSON 解析失败');}e.target.value='';};r.readAsText(f);};
 svUpd();
-function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){let _e=[0,13,25,38,50,63,75,88,100],_bar='',_tk='';for(let b=0;b<8;b++)_bar+='<span style="width:15px;height:10px;display:inline-block;background:'+SHC[b]+'"></span>';for(let _i=0;_i<_e.length;_i++)_tk+='<span>'+_e[_i]+(_i===_e.length-1?'%':'')+'</span>';l.innerHTML='<b style="font-weight:500">14:00 路段遮荫率(蓝=遮荫,红=日晒)</b><div style="display:flex;margin-top:3px">'+_bar+'</div><div style="display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div>';}else if(colorMode==='flow')l.innerHTML='<b style="font-weight:500">'+(facMode==='orig'?'步行人流量(原始网络)':flowKind==='short'?'步行人流量(最短路径,不随 τ/λ)':'步行人流量(避热 τ='+DETOUR+'×)')+'</b><br><span class="sw" style="background:#7a3d18"></span>高 &nbsp;<span class="sw" style="background:#f4cf86"></span>低';else if(colorMode==='plain')l.innerHTML='<b style="font-weight:500">路网(无色)</b><br><span class="sw" style="background:#8c8c8c"></span>路网线';else l.innerHTML='<b style="font-weight:500">路网已隐藏</b>';l.innerHTML+='<br><span class="sw" style="background:#0F9E75"></span>最遮荫路 &nbsp;<span class="sw" style="background:#E0791E"></span>最短路';if(colorMode!=='none'){if(facMode==='hi')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>骑楼 &nbsp;<span class="sw" style="background:#2b6cb0"></span>连廊 &nbsp;<span class="sw" style="background:#12a5b0"></span>过街天桥 &nbsp;<span class="sw" style="background:#e07b2a"></span>楼宇连廊 &nbsp;<span class="sw" style="background:#9b59b6"></span>接入桥';else if(facMode==='hiM')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>人工遮荫设施(连廊/骑楼)';}}
+function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){let _e=[0,13,25,38,50,63,75,88,100],_bar='',_tk='';for(let b=0;b<8;b++)_bar+='<span style="width:15px;height:10px;display:inline-block;background:'+SHC[b]+'"></span>';for(let _i=0;_i<_e.length;_i++)_tk+='<span>'+_e[_i]+(_i===_e.length-1?'%':'')+'</span>';l.innerHTML='<b style="font-weight:500">'+D.hours[HRI]+':00 路段遮荫率(蓝=遮荫,红=日晒)</b><div style="display:flex;margin-top:3px">'+_bar+'</div><div style="display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div>';}else if(colorMode==='flow')l.innerHTML='<b style="font-weight:500">'+(facMode==='orig'?'步行人流量(原始网络)':flowKind==='short'?'步行人流量(最短路径,不随 τ/λ)':'步行人流量(避热 τ='+DETOUR+'×)')+'</b><br><span class="sw" style="background:#7a3d18"></span>高 &nbsp;<span class="sw" style="background:#f4cf86"></span>低';else if(colorMode==='plain')l.innerHTML='<b style="font-weight:500">路网(无色)</b><br><span class="sw" style="background:#8c8c8c"></span>路网线';else l.innerHTML='<b style="font-weight:500">路网已隐藏</b>';l.innerHTML+='<br><span class="sw" style="background:#0F9E75"></span>最遮荫路 &nbsp;<span class="sw" style="background:#E0791E"></span>最短路';if(colorMode!=='none'){if(facMode==='hi')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>骑楼 &nbsp;<span class="sw" style="background:#2b6cb0"></span>连廊 &nbsp;<span class="sw" style="background:#12a5b0"></span>过街天桥 &nbsp;<span class="sw" style="background:#e07b2a"></span>楼宇连廊 &nbsp;<span class="sw" style="background:#9b59b6"></span>接入桥';else if(facMode==='hiM')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>人工遮荫设施(连廊/骑楼)';}}
 ;(function(){function foldPanel(id){var p=document.getElementById(id);if(!p)return;var btn=document.getElementById(id+'F');if(!btn)return;var folded=p.getAttribute('data-fold')==='1';var kids=Array.from(p.children);kids.forEach(function(c,i){if(i>0)c.style.display=folded?'':'none';});p.setAttribute('data-fold',folded?'0':'1');btn.textContent=folded?'▾':'▸';}['prof','pov','topo'].forEach(function(id){var b=document.getElementById(id+'F');if(b)b.onclick=function(e){e.stopPropagation();foldPanel(id);};});})();
 </script></body></html>'''
 HTML=HTML.replace('__DATA__',dj)

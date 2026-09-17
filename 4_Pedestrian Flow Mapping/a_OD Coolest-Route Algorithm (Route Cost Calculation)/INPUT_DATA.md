@@ -35,5 +35,6 @@ The derived products below are not part of the data record; they are regenerated
 | `step4_4_edges_flow_SG.gpkg` | + `flow_short`, `flow_cool`, `flow_orig` |
 | `flow_lam_<lambda>.npy`, `flow_cooltau_<tau>.npy`, `flow_cool_orig_SG.npy` | per-edge flows (main component order) for the sensitivity runs |
 | `edge_facility_SG.npy`, `edge_shade_nofac_SG.npy`, `edge_px_SG.npz`, `edge_class_1m_totals.csv` | per-edge facility class, no-facility shade, per-metre shade attribution |
+| `edge_shade_hourly_SG.npz` | per-edge shade fraction for every hour 08-18 (keys `h08` ... `h18`, full row order of `step4_4_edges_SG.gpkg`; `h14` = `shade_full`) |
 | `step4_4_od_metrics_SG.csv`, `step4_4f_flow_lam_summary.csv`, `step4_4e_flow_detour_summary.csv` | aggregate metrics by building type / lambda / tau |
 | `SUB_SG_BUILDING_SHADOW_h14_1m.tif`, `SUB_SG_BLDTREE_SHADOW_h14_1m.tif` | baseline shadow rasters (uint8) |
