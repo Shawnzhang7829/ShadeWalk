@@ -51,11 +51,13 @@ than 20 m are dropped. Flow on an edge = sum of the demand of all OD pairs whose
 Runtime: edge shade about 10 min (two 44,000 x 27,000 rasters in memory as uint8); one lambda value of the
 city-wide routing about 1-2 h (one cut-off Dijkstra per station, 5,921 stations).
 
-Verification of the released scripts (2026-09-10): `make_prep.py` and `step4_4b_city_edge_shade.py` were re-run
-on the published network (469,434 edges, 21 s + 91 s). The graph is identical to the production edge layer
-(component labels, `u` / `v`); the shade fractions are identical on 99.1 % of the edges (`shade_full`) and 97.6 %
-(`shade_bld`); the differing edges lie where the building-footprint mask and the arcade shadows were updated after
-the June production run (the rasters on disk post-date that run; the old rasters are no longer available).
+Verification of the released scripts (2026-09-10, updated 2026-09-17): `make_prep.py` and `step4_4b_city_edge_shade.py`
+were re-run on the published network (469,434 edges, 21 s + 91 s). The graph is identical to the production edge layer
+(component labels, `u` / `v`). On 2026-09-10 the shade fractions agreed on 99.1 % of the edges (`shade_full`) and 97.6 %
+(`shade_bld`): the production layer of June had been sampled with the building-footprint mask of the previous arcade data
+set (the mask on disk had been updated together with the arcade shadows). On 2026-09-17 the production layer was regenerated
+with the released script and the rasters on disk; it is now identical, on every edge, to the corrected per-edge shade used by the
+paper chain, and the routing / flow products, the hourly edge shade and the web app were recomputed from it.
 
 ## 4. Results (Singapore, 14:00, all trips)
 
