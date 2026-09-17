@@ -17,8 +17,8 @@ repository). Decompress and open it in a modern browser:
 gunzip -k "dist/nav_app_paper_en.html.gz"
 ```
 
-The page needs internet access for the MapLibre / three.js libraries and the basemap tiles (CARTO, OneMap,
-OpenStreetMap or Google satellite); all ShadeWalk data are embedded. `dist/demo_scenarios.json` holds the
+The page needs internet access for the MapLibre / three.js libraries and the basemap tiles (Esri World Light Gray Canvas, OpenFreeMap Positron, OneMap
+or Google satellite); all ShadeWalk data are embedded. `dist/demo_scenarios.json` holds the
 demonstration origin-destination pairs shown in the "Demo" panel.
 
 ## Generators

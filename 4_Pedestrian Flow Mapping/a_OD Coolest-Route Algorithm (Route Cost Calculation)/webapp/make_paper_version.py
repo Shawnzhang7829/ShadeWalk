@@ -93,8 +93,8 @@ DTH_NEW=("var PLS=[0.005,0.01,0.02,0.04,0.06,0.09,0.12,0.15,0.18,0.2,0.25,0.35,0
 LEG_OLD="'步行人流量(避热 τ='+DETOUR+'×)'"
 LEG_NEW="'步行人流量(论文口径 λ='+PLAM+')'"
 # flowCur: use the fixed-lambda flow fields (step4_4f); fall back to the nearest level when one is missing
-FC_OLD="function flowCur(){return FT[DETOUR]||EF;}  // pedestrian-flow field matching the current Detour limit; falls back to flow_short"
-FC_NEW=("function flowCur(){if(!D.flam)return EF;var k=String(PLAM).replace('.','p');if(D.flam[k])return D.flam[k];\n"
+FC_OLD="function flowCur(){return flowKind==='short'?EF:(FT[DETOUR]||EF);}  // pedestrian-flow field: shortest routes (flow_short, fixed) or the heat-avoiding field of the current Detour limit"
+FC_NEW=("function flowCur(){if(flowKind==='short')return EF;if(!D.flam)return EF;var k=String(PLAM).replace('.','p');if(D.flam[k])return D.flam[k];\n"
  " var ks=Object.keys(D.flam),best=null,bd=1e9;ks.forEach(function(s){var v=parseFloat(s.replace('p','.'));var dd=Math.abs(Math.log(v)-Math.log(PLAM));if(dd<bd){bd=dd;best=s;}});\n"
  " return best?D.flam[best]:EF;}  // paper build: fixed-lambda flow fields (step4_4f); nearest lambda level if exact one is absent")
 # ===== new rho/omega distribution mode in Network view: colour the whole network by edge resistance rho=(1-sigma)+lambda, redrawn live with the lambda slider =====
@@ -116,8 +116,8 @@ RDW_NEW=("else if(colorMode==='rho'){map.getSource('net').setData(binFC('rho',ss
 SHC_OLD="const SHC=['#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0','#92c5de','#4393c3','#2166ac'];"
 SHC_NEW=("const SHC=['#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0','#92c5de','#4393c3','#2166ac'];\n"
  "const RHOC=['#f7f4ea','#e8dcc0','#d9be92','#c99d68','#b47b47','#96592f','#70401f','#452712'];  // street resistance rho: light=low(shaded), dark=high(sun)")
-ULG_OLD="function updLeg(){let l=document.getElementById('leg');if(colorMode==='shade'){"
-ULG_NEW=("function updLeg(){let l=document.getElementById('leg');\n"
+ULG_OLD="function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){"
+ULG_NEW=("function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';\n"
  " if(colorMode==='rho'){let _bar='';for(let b=0;b<8;b++)_bar+='<span style=\"width:15px;height:10px;display:inline-block;background:'+RHOC[b]+'\"></span>';\n"
  "  l.innerHTML='<b style=\"font-weight:500\">路段成本 ωᵢ=ℓ×ρ(λ='+PLAM+')</b><div style=\"display:flex;margin-top:3px\">'+_bar+'</div>'\n"
  "   +'<div style=\"display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px\"><span>低</span><span>ωᵢ = ℓ×ρ</span><span>高</span></div>'\n"

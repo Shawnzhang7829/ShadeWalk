@@ -30,7 +30,7 @@ cc=bw.geometry.centroid; bx=cc.x.values; by=cc.y.values; arch=bw['building_arche
 def cxy(m): return np.c_[bx[m],by[m]]
 hdb=cxy(arch=='hdb'); office=cxy(arch=='office')
 food=cxy(np.isin(arch,['restaurant','hawker_centre'])); mart=cxy(np.isin(arch,['supermarket','retail']))
-st=to3414(gpd.read_file(f"{SHP}\\POI\\station_hourly_ridership.gpkg")); sta=np.c_[st.geometry.x.values,st.geometry.y.values]
+st=to3414(gpd.read_file(f"{SHP}\\POI+station\\station_hourly_ridership_v4.gpkg"))   # station table v4 (2026-09-17): one record per real exit point; sta=np.c_[st.geometry.x.values,st.geometry.y.values]
 print(f"sources hdb{len(hdb)} office{len(office)} | targets sta{len(sta)} food{len(food)} mart{len(mart)} | {time.time()-t0:.0f}s",flush=True)
 def msd(txy):
     _,tn=tree.query(txy); tn=tn.astype(int)

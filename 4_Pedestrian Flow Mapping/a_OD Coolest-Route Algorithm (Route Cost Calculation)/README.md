@@ -24,9 +24,9 @@ formulation with a hard detour cap `tau` (coolest route among paths with length 
 ## 2. Demand model
 
 Every trip has one end at a transit station (MRT / LRT exit or bus stop) and the other at a building.
-Station demand = 14:00 weekday ridership of each origin row (`inj_weekday_14` from Module 4b: the station's
-tap-in + tap-out divided over its exits; `tot_weekday_14` holds the station total on every exit row and must
-not be used per row). It is distributed to the buildings
+Station demand = 14:00 weekday ridership of each origin record (`inj_weekday_14` of `station_hourly_ridership_v4.gpkg`,
+Module 4b: the station's tap-in + tap-out divided over its real exit points; an interchange is one station whose
+line codes share the same exits; `tot_weekday_14` holds the whole-station value and must not be used per record). It is distributed to the buildings
 within the walking catchment (network distance <= 800 m for MRT / LRT, <= 400 m for bus, cut-off Dijkstra) in
 proportion to `building weight x exp(-d / 350 m)`, where the building weight is the 14:00 occupancy weight of
 Module 4b (`weight_weekday_14`). Stations and buildings snap to the nearest network node within 120 m; pairs closer
