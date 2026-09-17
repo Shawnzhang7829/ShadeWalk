@@ -98,8 +98,8 @@ FC_NEW=("function flowCur(){if(flowKind==='short')return EF;if(!D.flam)return EF
  " var ks=Object.keys(D.flam),best=null,bd=1e9;ks.forEach(function(s){var v=parseFloat(s.replace('p','.'));var dd=Math.abs(Math.log(v)-Math.log(PLAM));if(dd<bd){bd=dd;best=s;}});\n"
  " return best?D.flam[best]:EF;}  // paper build: fixed-lambda flow fields (step4_4f); nearest lambda level if exact one is absent")
 # ===== new rho/omega distribution mode in Network view: colour the whole network by edge resistance rho=(1-sigma)+lambda, redrawn live with the lambda slider =====
-BTN_OLD='<button class="btn" id="cShade">遮荫率</button>'
-BTN_NEW='<button class="btn" id="cShade">遮荫率</button><button class="btn" id="cRho">路段成本 ωᵢ</button>'
+BTN_OLD='<button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">σₑ</button>'
+BTN_NEW='<button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">σₑ</button><button class="btn" id="cRho">路段成本 ωᵢ</button>'
 HND_OLD="document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();};"
 HND_NEW=("document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cRho','cPlain','cNone']);redrawNet();};\n"
  "document.getElementById('cRho').onclick=function(){colorMode='rho';pick(this,['cShade','cFlow','cRho','cPlain','cNone']);ensureNetVisible&&0;redrawNet();cleanView();tip('路段成本 ωᵢ=ℓ×ρ 分布(ρ=(1−σ)+λ,λ='+PLAM+'):深=成本高(长且晒),浅=成本低(短或荫);最遮荫路 = min ω=Σωᵢ');};")

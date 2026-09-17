@@ -4,7 +4,10 @@ MRT 800 m / BUS 400 m, SNAP 120 m, Ls<20 dropped); only the path rule is changed
 (mirrors the web coolDetour: scan lambda in ascending order, take the first that satisfies len <= tau*Ls+1 = coolest within the cap; fall back to the shortest route).
 tau in {1, 1.2, 1.5, 2}. Validation: recompute flow_short in the same framework and compare with the 4c stored values. Output: 4 per-edge npy files (comp0 row order)
 + summary CSV + curve / difference figures. All-facility (All) network. pyenv."""
-import numpy as np, geopandas as gpd, pandas as pd, time, collections, heapq
+import numpy as np, geopandas as gpd, pandas as pd, time, collections, heapq, os, sys
+_SPLIT=os.environ.get('STA_SPLIT')        # 0917 parallel: 'k/K' = this process routes the stations with index % K == k and saves a partial
+_MERGE=os.environ.get('MERGE_PARTIALS')   # 0917 parallel: 'K' = no routing; the K partials are summed and the post-processing runs on the sums
+_k,_K=(int(x) for x in _SPLIT.split('/')) if _SPLIT else (0,1)
 from scipy.spatial import cKDTree
 OUT=r"D:\Claude\SVI_FFW\output\step5_nav_webapp"
 BW=r"D:\Claude\UNA\Patronage_Flow\output\building_hourly_weight.gpkg"
@@ -89,7 +92,8 @@ flowT={t:collections.defaultdict(float) for t in TAUS}
 AG={t:np.zeros(5) for t in TAUS}                     # [vol, vol*L, vol*shadeM, vol*det, vol*facM]
 AGS=np.zeros(5)
 routed=0.0; tot_R=sum(s[1] for s in stas)
-for qi,(sn,R,mode) in enumerate(stas):
+for qi,(sn,R,mode) in enumerate([] if _MERGE else stas):
+    if _SPLIT and qi%_K!=_k: continue   # 0917 parallel: station subset of this process
     Dc=D_MRT if mode=='MRT' else D_BUS
     dS,plS,psS,peS,pnS=dij(sn,COSTS[0]*0+plen2,Dc)   # shortest (cost=len)
     cat=[(n,node_blds[n],d) for n,d in dS.items() if n in node_blds and n!=sn and d>=20]
@@ -124,6 +128,22 @@ for qi,(sn,R,mode) in enumerate(stas):
                 if pfac[ei]: fm+=plen2[ei]
             AG[t]+=[vol,vol*Lp,vol*shm,vol*(Lp/Ls),vol*fm]
     if (qi+1)%800==0: print(f"  stations {qi+1}/{len(stas)} ({time.time()-t0:.0f}s)",flush=True)
+# ---- 0917 parallel by station subset: save this process share, or sum the shares of all processes (same sums as the sequential run) ----
+if _SPLIT:
+    np.savez(f"{OUT}\\_4e_partial_{_k}of{_K}.npz",fsk=np.array(list(flowS.keys()),np.int64),fsv=np.array(list(flowS.values()),np.float64),
+             **{f"ftk{int(t*100)}":np.array(list(flowT[t].keys()),np.int64) for t in TAUS},**{f"ftv{int(t*100)}":np.array(list(flowT[t].values()),np.float64) for t in TAUS},
+             AG=np.array([AG[t] for t in TAUS]),AGS=AGS,routed=np.array(routed))
+    print(f"PARTIAL {_k}/{_K} saved | {time.time()-t0:.0f}s",flush=True); sys.exit(0)
+if _MERGE:
+    for k in range(int(_MERGE)):
+        z=np.load(f"{OUT}\\_4e_partial_{k}of{int(_MERGE)}.npz")
+        for ei,v in zip(z["fsk"],z["fsv"]): flowS[int(ei)]+=float(v)
+        for ti,t in enumerate(TAUS):
+            fd=flowT[t]
+            for ei,v in zip(z[f"ftk{int(t*100)}"],z[f"ftv{int(t*100)}"]): fd[int(ei)]+=float(v)
+            AG[t]+=z["AG"][ti]
+        AGS+=z["AGS"]; routed+=float(z["routed"])
+    print(f"merged {_MERGE} partials | {time.time()-t0:.0f}s",flush=True)
 print(f"assigned {routed:,.0f}/{tot_R:,.0f} ({100*routed/max(tot_R,1):.0f}%) | {time.time()-t0:.0f}s",flush=True)
 
 # validation: recomputed flow_short vs 4c stored values

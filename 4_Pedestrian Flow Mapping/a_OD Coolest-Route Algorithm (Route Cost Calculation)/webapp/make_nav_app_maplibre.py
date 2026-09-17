@@ -265,13 +265,16 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <label class="lay"><input type="checkbox" id="lyStaPt"><span class="sw2" style="background:#f39c12;border-radius:50%"></span>站点 MRT/巴士</label>
   <label class="lay"><input type="checkbox" id="lyBldPt"><span class="sw2" style="background:#6a51a3;border-radius:50%"></span>建筑中心点</label>
   <hr>
+  <div class="sec" style="margin-bottom:4px" title="阴影/分类栅格、路网遮荫率与避热路由随时刻变化(8–18点);人流场按 14:00">日间时刻 <b id="hrLbl" style="color:#1d1c1a">14:00</b></div>
+  <input type="range" id="hr" min="0" max="10" step="1" value="6" style="width:100%;margin-bottom:6px">
+  <hr>
   <div class="sec" style="margin-bottom:5px">Basemap</div>
   <div style="display:flex;gap:7px;margin-bottom:11px"><button class="btn on" id="bmGray">Simple</button><button class="btn" id="bmOsm" title="OpenFreeMap Positron 矢量底图(OSM 数据)">OSM</button><button class="btn" id="bmOne">OneMap</button><button class="btn" id="bmGsat">卫星</button><button class="btn" id="bmNone">无</button></div>
   <div class="sec" style="margin-bottom:5px">视图 View</div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"><button class="btn on" id="v2d">2D 平面</button><button class="btn" id="v3d">3D 鸟瞰</button><button class="btn" id="bPov"><i class="ti ti-walk"></i> 行人视角</button></div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px"><button class="btn" id="bSun" title="逐时太阳遮荫(随时刻滑杆)">太阳阴影</button><button class="btn" id="aCol" title="骑楼柱廊柱子(仅3D)">骑楼柱子</button><button class="btn" id="bTopo" title="OD 间可行路径拓扑图(绕行率上限=My Demos 的 Detour limit)">拓扑图</button></div>
   <div class="sec" style="margin-bottom:5px">网络视图</div>
-  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade">遮荫率</button><button class="btn" id="cFlow">人流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">σₑ</button><button class="btn" id="cFlow">人流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
   <div id="fkBox" class="fkTabs"><span class="fkLbl">人流场</span><button class="fkTab on" id="fkCool" title="避热路径(coolest)的人流分布,随绕行上限/λ 变化">最遮荫路</button><button class="fkTab" id="fkShort" title="最短路径的人流分布,不随绕行上限/λ 变化">最短路</button></div>
   <div class="sec" style="margin-bottom:5px">人工遮荫设施(连廊/骑楼)</div>
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn on" id="fAll">全部</button><button class="btn" id="fOrig">仅原始</button><button class="btn" id="fHi">分类高亮</button><button class="btn" id="fHiM">统一高亮</button></div>
@@ -288,8 +291,6 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <div class="sec" style="margin-bottom:5px">遮荫栅格 (10m)</div>
   <label class="lay"><input type="checkbox" id="lyShad"><span class="sw2" style="background:#2c7fb8"></span>阴影 Shadow(随滑杆)</label>
   <label class="lay"><input type="checkbox" id="lyCat"><span class="sw2" style="background:#d4322c"></span>分类 Category(随滑杆)</label>
-  <div class="sec" style="margin-top:8px;margin-bottom:4px" title="阴影/分类栅格、路网遮荫率与避热路由随时刻变化(8–18点);人流场按 14:00">日间时刻 <b id="hrLbl" style="color:#1d1c1a">14:00</b></div>
-  <input type="range" id="hr" min="0" max="10" step="1" value="6" style="width:100%;margin-bottom:6px">
   <p class="sub" style="margin-top:13px">点击地图设起点/终点。最遮荫路=最小日晒里程;最短路=最短距离。栅格已内联(树木/阴影/分类均 ≈10m 单帧),双击即可打开,无需服务器。</p>
 </aside>
 <main id="map"><div id="legwrap"><div class="leg" id="leg"></div><div id="catleg" style="display:none"></div></div><div id="tip"></div>

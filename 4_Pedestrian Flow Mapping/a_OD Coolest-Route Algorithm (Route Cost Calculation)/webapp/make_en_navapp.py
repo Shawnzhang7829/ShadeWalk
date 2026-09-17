@@ -7,6 +7,7 @@ IN=sys.argv[1] if len(sys.argv)>1 else "nav_app.html"; OUT=sys.argv[2] if len(sy
 html=open(f"{WEB}\\{IN}",encoding="utf-8").read()
 html=html.replace('<html lang="zh">','<html lang="en">')
 R=[
+('title="路段遮荫率 σₑ(随日间时刻)"','title="Edge shade fraction σₑ (follows the Daily time slider)"'),
 # ---- 2026-09-17: Daily time slider (hourly network shade / routing) ----
 ("日间时刻 ","Daily time "),
 ('title="阴影/分类栅格、路网遮荫率与避热路由随时刻变化(8–18点);人流场按 14:00"','title="Shadow/class raster, network shade and coolest routing follow the hour (08–18); flow fields are 14:00"'),
