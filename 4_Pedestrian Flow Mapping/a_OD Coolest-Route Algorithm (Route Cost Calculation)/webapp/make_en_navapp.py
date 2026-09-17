@@ -7,6 +7,9 @@ IN=sys.argv[1] if len(sys.argv)>1 else "nav_app.html"; OUT=sys.argv[2] if len(sy
 html=open(f"{WEB}\\{IN}",encoding="utf-8").read()
 html=html.replace('<html lang="zh">','<html lang="en">')
 R=[
+# ---- 2026-09-17: Daily time slider (hourly network shade / routing) ----
+("日间时刻 ","Daily time "),
+('title="阴影/分类栅格、路网遮荫率与避热路由随时刻变化(8–18点);人流场按 14:00"','title="Shadow/class raster, network shade and coolest routing follow the hour (08–18); flow fields are 14:00"'),
 # ---- 2026-09-17: shortest route mapping toggle (Network view, Pedestrian flow) ----
 ("避热路径(coolest)的人流分布,随绕行上限/λ 变化","flow on the coolest routes; follows the detour limit / λ"),
 ("最短路径的人流分布,不随绕行上限/λ 变化","flow on the shortest routes; independent of the detour limit / λ"),
@@ -147,7 +150,6 @@ R=[
 ("遮荫栅格 (10m)","Shade raster (10m res.)"),
 ("阴影 Shadow(随滑杆)","Shadow"),
 ("分类 Category(随滑杆)","Class"),
-("逐时 8–18点 · 阴影/分类栅格 + 设施人流 ","Hourly 08–18 · shadow/class raster + facility flow "),
 ("点击地图设起点/终点。最遮荫路=最小日晒里程;最短路=最短距离。栅格已内联(树木/阴影/分类均 ≈10m 单帧),双击即可打开,无需服务器。","Click the map to set origin/destination. Coolest = least sun-exposed distance; Shortest = shortest distance. Rasters are inlined (trees/shadow/class ~10m single frame) — open by double-click, no server needed."),
 ("遮荫栅格(40m 逐时,8–18点 ","Shade raster (40m hourly, 08–18 "),
 ("逐时阴影 Shadow","Hourly shadow"),
@@ -163,7 +165,7 @@ R=[
 ("逐时概览(40m,8–18点 ","Hourly overview (40m, 08–18 "),
 ("逐时阴影概览","Hourly shadow (overview)"),
 ("逐时分类概览","Hourly class (overview)"),
-("14:00 路段遮荫率(蓝=遮荫,红=日晒)","14:00 path shade (blue=shaded, red=sun)"),
+(":00 路段遮荫率(蓝=遮荫,红=日晒)",":00 path shade (blue=shaded, red=sun)"),
 ("路网(无色)","Network (plain)"),
 ("路网线","network line"),
 ("无色","Plain"),

@@ -3,7 +3,7 @@
 Single-file web application (MapLibre GL + three.js, all data inlined as base64 / typed arrays) that lets a user
 pick an origin and a destination anywhere in Singapore and compares the shortest route with the coolest route
 computed in the browser (Dijkstra on the main component of the reconstructed network, edge cost
-`length x ((1 - shade) + lambda)`, shade reward slider for lambda). It also shows the hourly shade layers, the
+`length x ((1 - shade) + lambda)`, shade reward slider for lambda). It also shows the hourly shade layers (Daily time slider 08-18: the network shade colouring, the coolest routing and the route cards follow the hour, the flow fields stay at 14:00), the
 shade facilities (arcades, covered linkways, trees, buildings), the segment cost `omega_i`, a route-level and a
 street-level topology graph, per-edge pedestrian flow (shortest / coolest / original network) and a 3D view with a
 pedestrian-perspective walk-through.
@@ -25,7 +25,7 @@ demonstration origin-destination pairs shown in the "Demo" panel.
 
 | Script | Purpose |
 |---|---|
-| `make_nav_app_maplibre.py` | builds `nav_app.html` from the Module 4a / 5 products: network edges and nodes, edge shade / facility / flow arrays (`flow_cooltau_*.npy`, `flow_lam_*.npy`), arcade / linkway / building rings, tree points, station ridership, hourly shade layers (`make_hourly_cache.py`), demo OD pairs |
+| `make_nav_app_maplibre.py` | builds `nav_app.html` from the Module 4a / 5 products: network edges and nodes, edge shade / facility / flow arrays (`flow_cooltau_*.npy`, `flow_lam_*.npy`), arcade / linkway / building rings, tree points, station ridership, hourly shade layers (`make_hourly_cache.py`), hourly edge shade (`edge_shade_hourly_SG.npz`, embedded as base64 uint8 layers), demo OD pairs |
 | `make_paper_version.py` | post-processes `nav_app.html` into the paper build: replaces the expert-weighted topology metrics by the paper definition (`rho = (1 - shade) + lambda`, `omega = sum(l * rho)`, lambda = 0.2 with slider) |
 | `make_en_navapp.py` | produces the English UI (`nav_app_en.html`, `nav_app_paper_en.html`) from the Chinese build by ordered string replacement and reports any untranslated remainder |
 | `make_nav_app_mobile.py` | slim mobile build (routing core + three hourly shade frames) |
