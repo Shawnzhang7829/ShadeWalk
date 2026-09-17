@@ -274,7 +274,7 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"><button class="btn on" id="v2d">2D 平面</button><button class="btn" id="v3d">3D 鸟瞰</button><button class="btn" id="bPov"><i class="ti ti-walk"></i> 行人视角</button></div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px"><button class="btn" id="bSun" title="逐时太阳遮荫(随时刻滑杆)">太阳阴影</button><button class="btn" id="aCol" title="骑楼柱廊柱子(仅3D)">骑楼柱子</button><button class="btn" id="bTopo" title="OD 间可行路径拓扑图(绕行率上限=My Demos 的 Detour limit)">拓扑图</button></div>
   <div class="sec" style="margin-bottom:5px">网络视图</div>
-  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">σₑ</button><button class="btn" id="cFlow">人流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">遮荫率 σₑ</button><button class="btn" id="cFlow">人流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
   <div id="fkBox" class="fkTabs"><span class="fkLbl">人流场</span><button class="fkTab on" id="fkCool" title="避热路径(coolest)的人流分布,随绕行上限/λ 变化">最遮荫路</button><button class="fkTab" id="fkShort" title="最短路径的人流分布,不随绕行上限/λ 变化">最短路</button></div>
   <div class="sec" style="margin-bottom:5px">人工遮荫设施(连廊/骑楼)</div>
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn on" id="fAll">全部</button><button class="btn" id="fOrig">仅原始</button><button class="btn" id="fHi">分类高亮</button><button class="btn" id="fHiM">统一高亮</button></div>
