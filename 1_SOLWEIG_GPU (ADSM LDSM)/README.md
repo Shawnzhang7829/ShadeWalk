@@ -154,8 +154,8 @@ in `C:\Program Files\QGIS 3.40.15`.
 ## 7. Inputs
 
 See `INPUT_DATA.md` for the complete input inventory (rasters, vectors, meteorological forcing). The five UMEP-format
-forcing files used in the paper (station S50, Clementi Road) are Meteorological Service Singapore data and are not
-redistributed; the file format is described in `upstream_docs/input_data.md`.
+forcing files used in the paper (station S50, Clementi Road) are released with the rasters in the figshare data record
+(`1_shadow_model/forcing/`); the file format is described in `upstream_docs/input_data.md`.
 
 ## 8. Licence
 

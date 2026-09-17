@@ -56,14 +56,14 @@ refers to the folders above, and the `INPUT_DATA.md` of each module gives the fu
 | Data | What is used | Provider and licence | Module | Where to get it |
 |---|---|---|---|---|
 | Building footprints with height, storeys and function | 118,782 footprints of Singapore with building height, storeys, archetype (function class) and gross floor area; island boundary (14 polygons) | City Syntax Lab building dataset (OpenStreetMap footprints; heights and functions compiled by the lab). CC BY 4.0; footprints (c) OpenStreetMap contributors (ODbL) | 1 (building DSM via module 3b), 2 (exclusion mask), 3a / 3b (arcade projection), 4a / 4b (destination weights) | figshare `5_base_data/SG_buildings_footprint_height_function.zip`, `SG_island_boundary.zip` |
-| Tree-canopy height | Meta 1 m global canopy height map, clipped to Singapore (canopy height above ground) | Meta / WRI global canopy height maps (Tolan et al., 2024), CC BY 4.0 | 1 (CDSM, vegetation shadow) | figshare `1_shadow_model_rasters/SG_CDSM_tree_1m.tif` |
-| Terrain | ALOS PALSAR radiometrically terrain-corrected DEM (12.5 m), resampled to the 1 m city grid | JAXA / METI ALOS PALSAR, distributed by ASF DAAC (free with attribution) | 1 (DEM) | figshare `1_shadow_model_rasters/SG_DEM_1m.tif` |
+| Tree-canopy height | Meta 1 m global canopy height map, clipped to Singapore (canopy height above ground) | Meta / WRI global canopy height maps (Tolan et al., 2024), CC BY 4.0 | 1 (CDSM, vegetation shadow) | figshare `1_shadow_model/rasters/SG_CDSM_tree_1m.tif` |
+| Terrain | ALOS PALSAR radiometrically terrain-corrected DEM (12.5 m), resampled to the 1 m city grid | JAXA / METI ALOS PALSAR, distributed by ASF DAAC (free with attribution) | 1 (DEM) | figshare `1_shadow_model/rasters/SG_DEM_1m.tif` |
 | Satellite imagery, 0.3 m | Google Earth imagery mosaicked to SVY21; 1,111 annotated 1024 px training tiles (808 train / 303 validation) | Google (terms of use; tiles provided for research reproducibility only) | 2 (covered-linkway extraction) | training tiles: figshare `2_covered_linkway`; the island mosaic is not redistributed |
 | Street-level imagery, four views per point | Four perspective views per panorama point every 20 m along the road network (about 148,850 points in Singapore) | Google Street View Static API (Google terms of use; images not redistributed) | 3a (arcade detection), 3b (projection onto building footprints) | https://developers.google.com/maps/documentation/streetview/overview (also in figshare `3_arcade.txt`); detection probes, labels and sampling conventions are in module 3a |
 | Pedestrian network | OpenStreetMap `highway` extract of Singapore (June 2026), cleaned to 404,613 pedestrian-passable segments | OpenStreetMap contributors, ODbL | 5 (network reconstruction), 4b (flow model), 2 (network filter) | figshare `5_base_data/SG_osm_lines.gpkg` |
 | Public transport: stops, stations and passenger volumes | Bus stop locations (Aug 2025), MRT / LRT stations (Aug 2025) and station exits (Feb 2025); monthly passenger volumes by bus stop and train station and by origin-destination (hourly tap-in / tap-out) | Land Transport Authority of Singapore, LTA DataMall, Singapore Open Data Licence | 4b (demand origins; 4a uses its station-ridership export) | locations: figshare `4_OD_flow/Station_Location.zip`; volumes: https://datamall.lta.gov.sg/content/datamall/en/dynamic-data.html (also in figshare `4_OD_flow.txt`) |
 | Building occupancy schedules | 20 EnergyPlus archetype models (SGP 2025 V5): people per floor area and hourly occupancy schedules per building type | Singapore building-archetype models (SGP 2025 V5) | 4b (hourly destination weights of the gravity model; 4a uses its building-weight export) | figshare `4_OD_flow/AllArhcetypes_SGP_2025_V5.zip` |
-| Meteorological forcing | Hourly UMEP-format forcing of station S50 (Clementi Road): 2026-03-01 (paper run) and the four equinox / solstice days | Meteorological Service Singapore (not redistributed) | 1 (shadow model) | from the provider; format described in `1_SOLWEIG_GPU (ADSM LDSM)/upstream_docs/input_data.md` |
+| Meteorological forcing | Hourly UMEP-format forcing of station S50 (Clementi Road): 2026-03-01 (paper run) and the four equinox / solstice days | Meteorological Service Singapore | 1 (shadow model) | figshare `1_shadow_model/forcing/` (five UMEP-format files) |
 
 ## What is and is not in this repository
 
@@ -72,11 +72,11 @@ training annotations (LabelMe polygons, masks, tile grid), the arcade-probe mode
 trained covered-linkway checkpoint (27 MB), the English build of the web tool (gzip), and the documentation.
 
 Not included (size or licence): raw imagery (Google satellite basemap tiles, Google Street View images), the
-meteorological forcing files (Meteorological Service Singapore), the
+meteorological forcing files and the
 city-wide 1 m rasters (DEM, canopy, building DSM, 24-band shadow / category outputs), LTA and OSM source layers,
 the SAM ViT-H weights, and the derived vector / raster products of each module. Their sources and specifications
 are listed in the `INPUT_DATA.md` files. The input layers (shadow-model rasters, covered-linkway training tiles,
-transit and building layers, cleaned OSM lines) are released in the figshare data record accompanying the paper
+transit and building layers, cleaned OSM lines, meteorological forcing) are released in the figshare data record accompanying the paper
 (https://doi.org/10.6084/m9.figshare.33549025);
 the derived products are regenerated from them with this code and are available from the corresponding author on request.
 
