@@ -39,7 +39,7 @@ Module 2  covered_linkway_SG_island_tv_pednet_bridged.gpkg ─┬─> Module 1 (
                                                             └─> Module 5 (linkway centrelines)
 Module 3a arcade-positive views ──> Module 3b ─┬─ step2_arcade_sg.gpkg, step2_building_remain_sg.gpkg ──> Module 1 (ADSM, ADSMB, DSMremain, BREMAIN)
                                               └─ step2b_runs_sg.gpkg, step2_arcade_sg.gpkg ──────────────> Module 5 (arcade centrelines)
-Module 4b station_hourly_ridership.gpkg, building_hourly_weight.gpkg, pedestrian_network_filtered.gpkg ──> Modules 4a, 5, 2
+Module 4b station_hourly_ridership_v4.gpkg, building_hourly_weight.gpkg, pedestrian_network_filtered.gpkg ──> Modules 4a, 5, 2
 Module 1  Shadow_2pm_h14.tif, Category_2pm_h14.tif (and 24-band rasters) ──> Module 4a (edge shade) and the web tool
 Module 5  step4_network_final.gpkg ──> Module 4a (routing graph)
 ```

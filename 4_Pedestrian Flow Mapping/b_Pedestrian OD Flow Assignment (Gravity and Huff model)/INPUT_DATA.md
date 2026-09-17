@@ -25,5 +25,5 @@ Parameters (`Constants.py`): `NODE_SNAPPING_TOLERANCE_M` 1.0, `REDUNDANT_EDGE_TR
 
 The LTA DataMall datasets are available under the Singapore Open Data Licence (https://datamall.lta.gov.sg);
 the station and exit locations and the archetype IDF files are released in the data record (folder `4_OD_flow`);
-the derived products (`pedestrian_network_filtered.gpkg`, `station_hourly_ridership.gpkg`, `building_hourly_weight.gpkg`,
+the derived products (`pedestrian_network_filtered.gpkg`, `station_hourly_ridership.gpkg` and its per-exit-point form `station_hourly_ridership_v4.gpkg`, `building_hourly_weight.gpkg`,
 `flow_weekday_HH.gpkg`) are regenerated with this package and are available from the corresponding author on request.

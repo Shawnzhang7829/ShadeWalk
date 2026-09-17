@@ -8,7 +8,7 @@ import numpy as np, geopandas as gpd, pandas as pd, time, collections, heapq
 from scipy.spatial import cKDTree
 OUT=r"D:\Claude\SVI_FFW\output\step5_nav_webapp"
 BW=r"D:\Claude\UNA\Patronage_Flow\output\building_hourly_weight.gpkg"
-ST=r"D:\Claude\SVI_FFW\Shp\SG\POI\station_hourly_ridership.gpkg"
+ST=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\station_hourly_ridership_v4.gpkg"   # station table v4 (2026-09-17)
 BETA=350.0; SNAP_MAX=120.0; D_MRT=800.0; D_BUS=400.0
 LAMS=[0,0.03,0.08,0.15,0.35,0.7,1.4,3,8,20,60,200]   # lambda ascending = shade priority descending
 TAUS=[1.0,1.2,1.5,2.0]
@@ -73,9 +73,10 @@ for k in range(len(bw)):
     if bd[k]<=SNAP_MAX and np.isfinite(bw_w[k]) and bw_w[k]>0 and int(bi[k])<nN:
         node_blds[int(bi[k])]+=float(bw_w[k]); nb+=1
 st=gpd.read_file(ST).to_crs(3414)
-# Origin weight (fix of 2026-09-16): the station export has one row per MRT/LRT exit, and tot_* holds the whole station
-# on every exit row; the per-origin weight is inj_* = tot / n_exits (exports before 2026-09-16 also double-count
-# interchange line codes; use an export of Module 4b that splits them, or station_hourly_ridership_v2.gpkg).
+# Origin weight (station table v4, 2026-09-17): one record per REAL exit point / bus stop (tools/station_table_real_exits.py of
+# Module 4b).  An interchange is one station: its tap-in + tap-out is divided over its real exit points (coincident exit points of
+# several line codes count once), inj_* = station total / real exit points; tot_* is the whole-station value and must not be used
+# per row.  Earlier tables: v1 (per exit x line code, interchanges counted once per code) and v2 (line codes split) are superseded.
 _w=(st['inj_weekday_14'].values if 'inj_weekday_14' in st.columns else st['tot_weekday_14'].values/np.where(np.nan_to_num(st['n_exits'].values,nan=1)>0,np.nan_to_num(st['n_exits'].values,nan=1),1)).astype(float)
 st['w_origin']=_w; print(f'origin weights: {len(st)} rows, sum 14:00 = {np.nansum(_w):,.0f} (per-exit shares)',flush=True)
 sd,si=ntree.query(np.column_stack([st.geometry.x.values,st.geometry.y.values]))

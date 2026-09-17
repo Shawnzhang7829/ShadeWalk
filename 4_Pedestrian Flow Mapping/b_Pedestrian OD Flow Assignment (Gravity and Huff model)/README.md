@@ -20,7 +20,7 @@ added to the edges of its shortest path (alternatives up to `DETOUR_RATIO = 1.05
 volume), and the sums over all pairs give the edge flow. One betweenness call per (day type, hour) slot;
 bus and rail are run as two sub-passes with their own radius and added.
 
-Ridership handling: LTA volumes are monthly totals and are divided by 22 weekdays / 9 weekend days; interchange
+Ridership handling (station table v4, `tools/station_table_real_exits.py`): LTA volumes are monthly totals and are divided by 22 weekdays / 9 weekend days; interchange
 codes such as `NS24/NE6/CC1` are split and their volume divided by the number of parts; MRT ridership is divided
 equally over the physical exits of the station (`n_exits`); the few bus-stop codes that occur twice in the stop shapefile
 share their volume over their rows. Module 4a must use the per-row share `inj_*` of the export, never `tot_*`. `RIDERSHIP_MODE = "both"` injects tap-in + tap-out;
@@ -43,7 +43,8 @@ Occupancy density per archetype and hour comes from the 20 Singapore EnergyPlus 
 | `Patronage_Flow/Main_dualpass.py` | dual-pass ingress + egress model |
 | `Patronage_Flow/run_2025_quarterly.py`, `run_2025_annual_total.py` | seasonal snapshots (March / June / September / December 2025, 12:00 and 14:00) and the 12-month annual total (betweenness is linear in the origin weights, so the monthly sums are run once) |
 | `Patronage_Flow/build_occupancy_table.py` | EnergyPlus IDF parser -> occupancy density table |
-| `Patronage_Flow/export_building_hourly.py`, `export_station_hourly.py` | QA exports: `building_hourly_weight.gpkg`, `station_hourly_ridership.gpkg` (the inputs of Module 4a) |
+| `Patronage_Flow/export_building_hourly.py`, `export_station_hourly.py` | QA exports: `building_hourly_weight.gpkg`, `station_hourly_ridership.gpkg` (rows = MRT / LRT exits x line codes, bus stops) |
+| `tools/station_table_real_exits.py` | station table v4 = the export collapsed to one record per REAL exit point / bus stop, values rebuilt from the raw LTA month files (an interchange is one station, `inj_* = station total / real exit points`); this is the origin-weight table of Module 4a (`station_hourly_ridership_v4.gpkg`) |
 | `Patronage_Flow/lookup/` | `mrt_code_to_name.csv`, `occupancy_density.csv` / `.parquet` |
 | `notebooks/Patronage_Flow_Pipeline.ipynb` | step-by-step notebook (smoke bounding box first, then full island) |
 | `tools/patch_madina.py` | removes the `fastpath=True` argument that madina 0.0.15 passes to pandas (incompatible with pandas 3) |
@@ -66,6 +67,7 @@ python -m Patronage_Flow.run_2025_quarterly
 python -m Patronage_Flow.run_2025_annual_total
 python -m Patronage_Flow.export_building_hourly
 python -m Patronage_Flow.export_station_hourly
+python tools/station_table_real_exits.py --export output/station_hourly_ridership.gpkg --raw-dir "Station flow/2026-01/node" --tag 202601 --out output/station_hourly_ridership_v4.gpkg
 ```
 
 Set `SMOKE_BBOX = (27000, 28000, 33000, 34500)` (SVY21 metres, CBD) in `Constants.py` for a quick test.
@@ -88,7 +90,7 @@ processes), which is why every runner keeps its `if __name__ == "__main__":` gua
 | `output/flow_weekday_HH.gpkg` | per-slot pedestrian flow (`betweenness`, `flow`) - main deliverable |
 | `output/flow_long.parquet` | long table `edge_id x DAY_TYPE x HOUR -> flow` |
 | `output/2025_MM/`, `2025_annual/`, `2025_total/` | seasonal snapshots, four-quarter mean and true annual total |
-| `output/building_hourly_weight.gpkg`, `station_hourly_ridership.gpkg` | hourly destination weights and station ridership (used by Module 4a) |
+| `output/building_hourly_weight.gpkg`, `station_hourly_ridership.gpkg`, `station_hourly_ridership_v4.gpkg` | hourly destination weights and station ridership; the v4 table (one record per real exit point) is the one Module 4a uses |
 
 ## 5. Path configuration
 

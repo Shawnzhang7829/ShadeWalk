@@ -7,6 +7,11 @@ IN=sys.argv[1] if len(sys.argv)>1 else "nav_app.html"; OUT=sys.argv[2] if len(sy
 html=open(f"{WEB}\\{IN}",encoding="utf-8").read()
 html=html.replace('<html lang="zh">','<html lang="en">')
 R=[
+# ---- 2026-09-17: shortest route mapping toggle (Network view, Pedestrian flow) ----
+("避热路径(coolest)的人流分布,随绕行上限/λ 变化","flow on the coolest routes; follows the detour limit / λ"),
+("最短路径的人流分布,不随绕行上限/λ 变化","flow on the shortest routes; independent of the detour limit / λ"),
+("步行人流量(最短路径,不随 τ/λ)","Pedestrian flow (shortest routes, independent of τ / λ)"),
+("<span class=\"fkLbl\">人流场</span>","<span class=\"fkLbl\">Flow field</span>"),
 # ---- new rho/omega topology strings of the paper-routing build (nav_app_paper); placed first so they match first ----
 # ---- paper build: lambda / exchange-rate panel + resistance rho distribution mode ----
 ("遮荫回报率 Shade reward(η)","Shade reward (η)"),

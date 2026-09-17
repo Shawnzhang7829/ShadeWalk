@@ -68,8 +68,8 @@ def load_ridership_table(bus_csv=None, train_csv=None,
     if weekend_holidays_per_month is None:
         weekend_holidays_per_month = C.WEEKEND_HOLIDAYS_PER_MONTH
 
-    bus  = pd.read_csv(bus_csv)
-    rail = pd.read_csv(train_csv)
+    bus  = pd.read_csv(bus_csv, dtype={'PT_CODE': str})     # fix 2026-09-17: bus-stop codes keep their leading zero ('05013'); parsed as int they never joined the stop layer and the 225 central-area stops exported as 0
+    rail = pd.read_csv(train_csv, dtype={'PT_CODE': str})
     df = pd.concat([bus, rail], ignore_index=True)
     df = df.dropna(subset=["TIME_PER_HOUR", "PT_CODE", "DAY_TYPE"])
     df["PT_CODE"] = df["PT_CODE"].astype(str)
@@ -261,8 +261,8 @@ def load_ridership_split(mode: str) -> pd.DataFrame:
     """Same as load_ridership_table but force-uses one of: 'tap_in', 'tap_out'.
     Used for true dual-pass where we need each direction separately."""
     assert mode in ("tap_in", "tap_out"), f"unknown mode {mode!r}"
-    bus  = pd.read_csv(C.BUS_CSV)
-    rail = pd.read_csv(C.TRAIN_CSV)
+    bus  = pd.read_csv(C.BUS_CSV, dtype={'PT_CODE': str})   # fix 2026-09-17 (see load_ridership_table)
+    rail = pd.read_csv(C.TRAIN_CSV, dtype={'PT_CODE': str})
     df = pd.concat([bus, rail], ignore_index=True)
     df = df.dropna(subset=["TIME_PER_HOUR", "PT_CODE", "DAY_TYPE"])
     df["PT_CODE"] = df["PT_CODE"].astype(str)

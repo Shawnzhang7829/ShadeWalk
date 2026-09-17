@@ -16,7 +16,7 @@ for _fn in ('nav_app.html','nav_app_en.html'):
     _s=f"{WEB}\\{_fn}"
     if os.path.exists(_s):
         shutil.copy2(_s,f"{_BK}\\{_fn[:-5]}_{_ts}.html"); _nbk+=1
-        _hist=sorted(_g.glob(f"{_BK}\\{_fn[:-5]}_*.html"))
+        _hist=sorted(_g.glob(f"{_BK}\\{_fn[:-5]}_20[0-9][0-9][0-9][0-9][0-9][0-9]_*.html"))   # fix 2026-09-16: only this page's own timestamped copies (the old pattern also matched nav_app_en_* / nav_app_paper_* and pruned the nav_app_* backups)
         for _o in _hist[:-15]: os.remove(_o)
 if _nbk: print(f"已备份上一版 {_nbk} 个 html → backup/ ({_ts})",flush=True)
 ARC=r"D:\Claude\SVI_FFW\Shp\SG\step2_arcade_sg.gpkg"
@@ -154,16 +154,15 @@ _tg=_gt['girth_size'].map({'XS':0,'S':1,'M':2,'L':3}).fillna(1).astype(int).valu
 tree3d=dict(x=np.round(_tmx-ox).astype(int).tolist(),y=np.round(_tmy-oy).astype(int).tolist(),h=_th.tolist(),g=_tg.tolist())
 print(f"重点区树点 {len(tree3d['x'])} | 对齐 bldH{len(bldH)}/bld{len(bldR)} arcBH{len(arcBH)}/arc{len(arcR)} | {time.time()-t0:.0f}s",flush=True)
 # stations (MRT / bus) as optional O/D points
-STA=r"D:\Claude\SVI_FFW\Shp\SG\POI\station_hourly_ridership.gpkg"
+STA=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\station_hourly_ridership_v4.gpkg"   # station table v4 (2026-09-17): one record per real exit point / bus stop
 gs2=gpd.read_file(STA)
 try: gs2=gs2.to_crs(3414)
 except Exception: gs2=gs2.set_crs(3414,allow_override=True)
 smx,smy=to_m(gs2.geometry.x.values,gs2.geometry.y.values)
 SX=np.round(smx-ox).astype(int); SY=np.round(smy-oy).astype(int)
 SSRC=(gs2['source'].astype(str).str.upper()=='MRT').astype(int).tolist()
-SCODE=gs2['PT_CODE'].astype(str).tolist()
-_NEX=np.where(np.nan_to_num(gs2['n_exits'].values,nan=1)>0,np.nan_to_num(gs2['n_exits'].values,nan=1),1)   # fix 2026-09-16: tot_* is the station total on every exit row -> per-exit share
-SRID=np.round(np.nan_to_num(gs2['tot_weekday_total'].values)/_NEX).astype(int).tolist()
+SCODE=(gs2['CODES'] if 'CODES' in gs2.columns else gs2['PT_CODE']).astype(str).tolist()   # v4: all line codes sharing the exit, e.g. 'CC17,TE9'
+SRID=np.round(np.nan_to_num(sum(gs2[f'inj_weekday_{h:02d}'].values.astype(float) for h in range(24)))).astype(int).tolist()   # v4 (2026-09-17): daily injection of the record = station total / real exit points, 24 h summed
 print(f"站点{len(SX)} (MRT {sum(SSRC)}) | {time.time()-t0:.0f}s",flush=True)
 
 # all rasters inlined (self-contained, no server needed): tree 10 m PNG + shadow/class 40 m hourly frames (reusing the cache)
@@ -223,7 +222,7 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
 #legwrap{position:absolute;left:10px;bottom:10px;z-index:2;display:flex;flex-direction:column-reverse;gap:6px;align-items:flex-start;max-width:46%}#catleg{background:rgba(255,255,255,.94);border:1px solid #e2e0d7;border-radius:8px;padding:7px 9px;font-size:11px;line-height:1.55}.leg{background:rgba(255,255,255,.92);border:1px solid #e2e0d7;border-radius:8px;padding:8px 10px;font-size:12px;z-index:2}
 .sw{display:inline-block;width:20px;height:4px;border-radius:2px;vertical-align:middle;margin-right:5px}
 #tip{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:#1d1c1a;color:#fff;font-size:12px;padding:6px 13px;border-radius:18px;z-index:3;display:none}
-</style></head><body>
+.fkTabs{display:none;width:100%;align-items:flex-end;margin:-6px 0 10px 0;border-bottom:1px solid #d9d7d0}.fkLbl{font-size:10.5px;color:#6b6a63;margin-right:8px;padding-bottom:5px}.fkTab{background:none;border:none;padding:4px 11px 5px;font-size:11.5px;color:#6b6a63;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit}.fkTab.on{color:#0F6E56;border-bottom-color:#0F6E56;font-weight:600}</style></head><body>
 <div id="app">
 <aside id="panel">
   <div class="h"><svg viewBox="0 0 24 24" width="30" height="30" style="flex:none" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5.5" fill="#2e8b46"/><rect x="4.5" y="5" width="15" height="2.1" rx="0.6" fill="#ffd23f"/><line x1="6.3" y1="6.9" x2="6.3" y2="17.6" stroke="#ffd23f" stroke-width="1.4" stroke-linecap="round"/><line x1="17.7" y1="6.9" x2="17.7" y2="17.6" stroke="#ffd23f" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="9.7" r="1.62" fill="#fff"/><path d="M11.5 12.5C9.9 14 9.85 16.3 11.5 19.4Q12 20.1 12.5 19.4C14.15 16.3 14.1 14 12.5 12.5Q12 11.95 11.5 12.5Z" fill="#fff"/></svg>ShadeWalk</div>
@@ -261,12 +260,13 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <label class="lay"><input type="checkbox" id="lyBldPt"><span class="sw2" style="background:#6a51a3;border-radius:50%"></span>建筑中心点</label>
   <hr>
   <div class="sec" style="margin-bottom:5px">Basemap</div>
-  <div style="display:flex;gap:7px;margin-bottom:11px"><button class="btn on" id="bmGray">Simple</button><button class="btn" id="bmOsm">OSM</button><button class="btn" id="bmOne">OneMap</button><button class="btn" id="bmGsat">卫星</button><button class="btn" id="bmNone">无</button></div>
+  <div style="display:flex;gap:7px;margin-bottom:11px"><button class="btn on" id="bmGray">Simple</button><button class="btn" id="bmOsm" title="OpenFreeMap Positron 矢量底图(OSM 数据)">OSM</button><button class="btn" id="bmOne">OneMap</button><button class="btn" id="bmGsat">卫星</button><button class="btn" id="bmNone">无</button></div>
   <div class="sec" style="margin-bottom:5px">视图 View</div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"><button class="btn on" id="v2d">2D 平面</button><button class="btn" id="v3d">3D 鸟瞰</button><button class="btn" id="bPov"><i class="ti ti-walk"></i> 行人视角</button></div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px"><button class="btn" id="bSun" title="逐时太阳遮荫(随时刻滑杆)">太阳阴影</button><button class="btn" id="aCol" title="骑楼柱廊柱子(仅3D)">骑楼柱子</button><button class="btn" id="bTopo" title="OD 间可行路径拓扑图(绕行率上限=My Demos 的 Detour limit)">拓扑图</button></div>
   <div class="sec" style="margin-bottom:5px">网络视图</div>
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade">遮荫率</button><button class="btn" id="cFlow">人流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
+  <div id="fkBox" class="fkTabs"><span class="fkLbl">人流场</span><button class="fkTab on" id="fkCool" title="避热路径(coolest)的人流分布,随绕行上限/λ 变化">最遮荫路</button><button class="fkTab" id="fkShort" title="最短路径的人流分布,不随绕行上限/λ 变化">最短路</button></div>
   <div class="sec" style="margin-bottom:5px">人工遮荫设施(连廊/骑楼)</div>
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn on" id="fAll">全部</button><button class="btn" id="fOrig">仅原始</button><button class="btn" id="fHi">分类高亮</button><button class="btn" id="fHiM">统一高亮</button></div>
   <div class="sec" style="margin-bottom:5px">显示路线</div>
@@ -321,7 +321,7 @@ let SCN={arc:true,lkw:true};  // facility scenario: unchecking Arcades / Covered
 function esf(ei){return ((EFACC[ei]===3&&!SCN.arc)||(EFACC[ei]===4&&!SCN.lkw))?ESNN[ei]:ES[ei];}
 function eban(ei){return ESRCC[ei]===1&&((EFACC[ei]===3&&!SCN.arc)||(EFACC[ei]===4&&!SCN.lkw));}
 const FT={1:D.ft100,1.2:D.ft120,1.5:D.ft150,2:D.ft200};  // per-Detour-limit heat-avoiding flow (step4_4e tau-capped assignment)
-function flowCur(){return FT[DETOUR]||EF;}  // pedestrian-flow field matching the current Detour limit; falls back to flow_short
+function flowCur(){return flowKind==='short'?EF:(FT[DETOUR]||EF);}  // pedestrian-flow field: shortest routes (flow_short, fixed) or the heat-avoiding field of the current Detour limit
 const deg=new Int32Array(NN);for(let i=0;i<NE;i++){deg[U[i]]++;deg[V[i]]++;}
 const off=new Int32Array(NN+1);for(let i=0;i<NN;i++)off[i+1]=off[i]+deg[i];
 const aN=new Int32Array(NE*2),aE=new Int32Array(NE*2),cu=off.slice();
@@ -352,6 +352,7 @@ function pathFlow(r){if(!r||!r.eis||!r.eis.length)return 0;let s=0,F=flowCur();f
 function facShade(r){if(!r||!r.eis||!r.eis.length)return{arc:0,lkw:0,arcM:0,lkwM:0,totM:0};let arcM=0,lkwM=0,totM=0;for(let k=0;k<r.eis.length;k++){let ei=r.eis[k],sm=EL[ei]*esf(ei)/100;totM+=sm;if(D.efac[ei]===3&&SCN.arc)arcM+=sm;else if(D.efac[ei]===4&&SCN.lkw)lkwM+=sm;}return{arcM:arcM,lkwM:lkwM,totM:totM,arc:totM>0?arcM/totM:0,lkw:totM>0?lkwM/totM:0};}  // 骑楼(3)/连廊(4)对路径总遮荫的贡献占比,口径同剖面:每边遮荫米数 EL×ES/100,分母=路径总遮荫米数(=shade×len)
 function facLine(r){let f=facShade(r);return '<div class="mut" style="font-size:11px;margin-top:2px">人工设施遮荫贡献 <b style="color:#d4322c" title="骑楼段沿路提供遮荫约 '+Math.round(f.arcM)+' m">骑楼 '+Math.round(f.arc*100)+'%</b> · <b style="color:#2c7fb8" title="有盖连廊段沿路提供遮荫约 '+Math.round(f.lkwM)+' m">连廊 '+Math.round(f.lkw*100)+'%</b> <span style="opacity:.65">(合计 '+Math.round((f.arc+f.lkw)*100)+'%)</span></div>';}
 let DETOUR=1.5;   // detour limit (slider): cool path length <= shortest*DETOUR, pick the max shade-coverage path
+let flowKind='cool';   // 2026-09-17 pedestrian-flow field: 'cool' = heat-avoiding routes (follows the detour limit / lambda), 'short' = shortest routes (flow_short, fixed)
 function coolDetour(O,Dst,s){  // smaller lam = more shaded (more detour); within detour<=DETOUR take smallest lam = max shade coverage
  if(!s)return null;let c0=dij(O,Dst,'cool',0);            // lam=0 = pure most-shaded (longest detour)
  if(c0&&c0.len<=s.len*DETOUR+1)return c0;                 // pure-shaded already within detour limit -> use it (max coverage)
@@ -479,19 +480,24 @@ const _treeLayer={id:'tree3js',type:'custom',renderingMode:'3d',TCAP:40000,CCAP:
 function ensureTree3js(){if(tree3jsAdded)return;tree3jsAdded=true;if(typeof THREE==='undefined'){tip('three.js 未加载(需联网),3D 树木不可用');return;}if(!map.getLayer('tree3js'))map.addLayer(_treeLayer);map.on('moveend',function(){if((tree3dVis||sunShadow)&&map.getZoom()>=13){_treeLayer.rebuildView();map.triggerRepaint();}});}
 document.getElementById('ly3DTree').onchange=function(){ensureTree3js();tree3dVis=this.checked;if(tree3dVis&&_treeLayer.rebuildView)_treeLayer.rebuildView();if(_treeLayer.applyTrees)_treeLayer.applyTrees();map.triggerRepaint();tip(tree3dVis?'3D 真树已开:缩放到街区(zoom≥13,2D/3D 视图都可)显示视野内真树':'3D 树木已关');};
 function imgCoords(ext){let a=ll(ext[0],ext[3]),b=ll(ext[2],ext[3]),c=ll(ext[2],ext[1]),d=ll(ext[0],ext[1]);return [a,b,c,d];}
-const TSRC={onemap:['https://www.onemap.gov.sg/maps/tiles/Grey/{z}/{x}/{y}.png'],osm:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],gray:['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png','https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],gsat:['https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}','https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}','https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}','https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}']};
+const TSRC={onemap:['https://www.onemap.gov.sg/maps/tiles/Grey/{z}/{x}/{y}.png'],osm:'https://tiles.openfreemap.org/styles/positron',gray:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'],grayref:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],gsat:['https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}','https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}','https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}','https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}']};
 let baseMap='gray';
 const ctr=ll((D.xmin+D.xmax)/2,(D.ymin+D.ymax)/2);
-const map=new maplibregl.Map({container:'map',style:{version:8,glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',sources:{},layers:[{id:'bg',type:'background',paint:{'background-color':'#e9edf0'}}]},center:ctr,zoom:11,attributionControl:false,dragRotate:false,pitchWithRotate:false,maxPitch:70});
-map.addControl(new maplibregl.AttributionControl({customAttribution:'© OpenStreetMap / © CARTO / OneMap / Google · ShadeWalk'}));
+const map=new maplibregl.Map({container:'map',style:{version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sprite:'https://tiles.openfreemap.org/sprites/ofm_f384/ofm',sources:{},layers:[{id:'bg',type:'background',paint:{'background-color':'#e9edf0'}}]},center:ctr,zoom:11,attributionControl:false,dragRotate:false,pitchWithRotate:false,maxPitch:70});
+map.addControl(new maplibregl.AttributionControl({customAttribution:'© OpenStreetMap / OpenFreeMap © OpenMapTiles / Esri, HERE, Garmin / OneMap / Google · ShadeWalk'}));
 map.addControl(new maplibregl.ScaleControl({maxWidth:130,unit:'metric'}),'bottom-right');
 map.addControl(new maplibregl.NavigationControl({showZoom:false,showCompass:true,visualizePitch:true}),'bottom-right');
 let O=-1,Dst=-1,OA=null,DA=null,colorMode='plain',routeMode='both';
-function setBase(){['onemap','osm','gray','gsat'].forEach(k=>{if(map.getLayer('base_'+k))map.removeLayer('base_'+k);if(map.getSource('base_'+k))map.removeSource('base_'+k);});
+let _ofmStyle=null,_ofmSeq=0;   // 2026-09-16: 'Positron' basemap = OpenFreeMap Positron vector style (no API key); its sources / layers are inserted under the app layers with the prefix base_ofm_
+function baseBefore(){var _ls=map.getStyle().layers;for(var _i=0;_i<_ls.length;_i++){if(_ls[_i].id.indexOf('base_')!==0&&_ls[_i].type!=='background')return _ls[_i].id;}return undefined;}
+function setBase(){_ofmSeq++;map.getStyle().layers.filter(function(l){return l.id.indexOf('base_')===0;}).forEach(function(l){map.removeLayer(l.id);});Object.keys(map.getStyle().sources).filter(function(k){return k.indexOf('base_')===0;}).forEach(function(k){map.removeSource(k);});
  if(baseMap==='none')return;
- map.addSource('base_'+baseMap,{type:'raster',tiles:TSRC[baseMap],tileSize:256});
- var _ls=map.getStyle().layers,_bid;for(var _i=0;_i<_ls.length;_i++){if(_ls[_i].id.indexOf('base_')!==0&&_ls[_i].type!=='background'){_bid=_ls[_i].id;break;}}
- map.addLayer({id:'base_'+baseMap,type:'raster',source:'base_'+baseMap,paint:{'raster-opacity':baseMap==='gsat'?1.0:0.85}},_bid);}
+ if(typeof TSRC[baseMap]==='string'){var seq=_ofmSeq,bm=baseMap;var apply=function(st){if(seq!==_ofmSeq||baseMap!==bm)return;var bid=baseBefore();for(var k in st.sources)map.addSource('base_ofm_'+k,JSON.parse(JSON.stringify(st.sources[k])));st.layers.forEach(function(l){var L=JSON.parse(JSON.stringify(l));L.id='base_ofm_'+l.id;if(L.source)L.source='base_ofm_'+L.source;map.addLayer(L,bid);});};
+  if(_ofmStyle)apply(_ofmStyle);else fetch(TSRC[baseMap]).then(function(r){return r.json();}).then(function(st){_ofmStyle=st;apply(st);}).catch(function(e){tip('Positron 底图加载失败:'+e);});return;}
+ var _src={type:'raster',tiles:TSRC[baseMap],tileSize:256};if(baseMap==='gray')_src.maxzoom=16;map.addSource('base_'+baseMap,_src);   // Simple = Esri World Light Gray Canvas (no API key; CARTO light_all now watermarks 'API KEY REQUIRED'); Esri tiles end at z16 and are overzoomed beyond
+ var _bid=baseBefore();
+ map.addLayer({id:'base_'+baseMap,type:'raster',source:'base_'+baseMap,paint:{'raster-opacity':baseMap==='gsat'?1.0:0.85}},_bid);
+ if(baseMap==='gray'){map.addSource('base_grayref',{type:'raster',tiles:TSRC.grayref,tileSize:256,maxzoom:16});map.addLayer({id:'base_grayref',type:'raster',source:'base_grayref',paint:{'raster-opacity':0.85}},_bid);}}   // place-name / road labels of the Esri canvas (separate Reference service), still under the network layers
 map.on('load',()=>{
  setBase();
  map.addSource('net',{type:'geojson',data:binFC('shade')});
@@ -506,7 +512,7 @@ map.on('load',()=>{
  map.addLayer({id:'acc',type:'line',source:'acc',layout:{'line-cap':'round'},paint:{'line-color':'#3a3a3a','line-width':2,'line-dasharray':[1.4,1.4],'line-opacity':0.85}});
  map.addSource('od',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
  map.addLayer({id:'od',type:'circle',source:'od',paint:{'circle-radius':9,'circle-color':['get','c'],'circle-stroke-width':2,'circle-stroke-color':'#fff'}});
- map.addLayer({id:'odlab',type:'symbol',source:'od',layout:{'text-field':['get','lab'],'text-size':13,'text-font':['Open Sans Semibold'],'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#fff'}});
+ map.addLayer({id:'odlab',type:'symbol',source:'od',layout:{'text-field':['get','lab'],'text-size':13,'text-font':['Noto Sans Bold'],'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#fff'}});
  updLeg();
 });
 function lazyVec(id,rings,color,op){if(map.getLayer(id))return;map.addSource(id,{type:'geojson',data:polyFC(rings)});
@@ -575,6 +581,8 @@ document.getElementById('cShade').onclick=function(){colorMode='shade';pick(this
 document.getElementById('cFlow').onclick=function(){colorMode='flow';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();cleanView();tip('已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
 document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();};
 document.getElementById('cNone').onclick=function(){colorMode='none';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();};
+document.getElementById('fkCool').onclick=function(){flowKind='cool';pick(this,['fkCool','fkShort']);if(colorMode==='flow')redrawNet();};   // 2026-09-17 shortest route mapping toggle
+document.getElementById('fkShort').onclick=function(){flowKind='short';pick(this,['fkCool','fkShort']);if(colorMode==='flow')redrawNet();};
 document.getElementById('fAll').onclick=function(){facMode='all';pick(this,['fAll','fOrig','fHi','fHiM']);ensureNetVisible();redrawNet();};
 document.getElementById('fOrig').onclick=function(){facMode='orig';pick(this,['fAll','fOrig','fHi','fHiM']);ensureNetVisible();redrawNet();};
 document.getElementById('fHi').onclick=function(){facMode='hi';pick(this,['fAll','fOrig','fHi','fHiM']);ensureNetVisible();cleanView();redrawNet();tip('已切到「分类高亮」:红=骑楼 蓝=连廊 青=过街天桥 橙=楼宇连廊 紫=接入桥 · 已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
@@ -862,7 +870,7 @@ document.getElementById('dmClear').onclick=()=>{var a=svList();if(!a.length){tip
 document.getElementById('dmImport').onclick=()=>document.getElementById('dmFile').click();
 document.getElementById('dmFile').onchange=(e)=>{var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=()=>{try{var d=JSON.parse(r.result);var arr=Array.isArray(d)?d:((d&&typeof d==='object')?Object.keys(d).reduce(function(x,k){return x.concat(Array.isArray(d[k])?d[k]:[]);},[]):null);if(!arr){tip('导入失败:需 OD 数组或场景对象 json');return;}arr=arr.filter(function(p){return Array.isArray(p)&&p.length>=4&&typeof p[0]==='number'&&typeof p[3]==='number';});if(!arr.length){tip('导入失败:没有有效 OD');return;}importedOD=arr;myI=svList().length+((((D.demoOD||{}).my_saved)||[]).length);svUpd();tip('已导入 '+arr.length+' 条(临时,不入收藏)');document.getElementById('dmMine').click();}catch(ex){tip('JSON 解析失败');}e.target.value='';};r.readAsText(f);};
 svUpd();
-function updLeg(){let l=document.getElementById('leg');if(colorMode==='shade'){let _e=[0,13,25,38,50,63,75,88,100],_bar='',_tk='';for(let b=0;b<8;b++)_bar+='<span style="width:15px;height:10px;display:inline-block;background:'+SHC[b]+'"></span>';for(let _i=0;_i<_e.length;_i++)_tk+='<span>'+_e[_i]+(_i===_e.length-1?'%':'')+'</span>';l.innerHTML='<b style="font-weight:500">14:00 路段遮荫率(蓝=遮荫,红=日晒)</b><div style="display:flex;margin-top:3px">'+_bar+'</div><div style="display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div>';}else if(colorMode==='flow')l.innerHTML='<b style="font-weight:500">'+(facMode==='orig'?'步行人流量(原始网络)':'步行人流量(避热 τ='+DETOUR+'×)')+'</b><br><span class="sw" style="background:#7a3d18"></span>高 &nbsp;<span class="sw" style="background:#f4cf86"></span>低';else if(colorMode==='plain')l.innerHTML='<b style="font-weight:500">路网(无色)</b><br><span class="sw" style="background:#8c8c8c"></span>路网线';else l.innerHTML='<b style="font-weight:500">路网已隐藏</b>';l.innerHTML+='<br><span class="sw" style="background:#0F9E75"></span>最遮荫路 &nbsp;<span class="sw" style="background:#E0791E"></span>最短路';if(colorMode!=='none'){if(facMode==='hi')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>骑楼 &nbsp;<span class="sw" style="background:#2b6cb0"></span>连廊 &nbsp;<span class="sw" style="background:#12a5b0"></span>过街天桥 &nbsp;<span class="sw" style="background:#e07b2a"></span>楼宇连廊 &nbsp;<span class="sw" style="background:#9b59b6"></span>接入桥';else if(facMode==='hiM')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>人工遮荫设施(连廊/骑楼)';}}
+function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){let _e=[0,13,25,38,50,63,75,88,100],_bar='',_tk='';for(let b=0;b<8;b++)_bar+='<span style="width:15px;height:10px;display:inline-block;background:'+SHC[b]+'"></span>';for(let _i=0;_i<_e.length;_i++)_tk+='<span>'+_e[_i]+(_i===_e.length-1?'%':'')+'</span>';l.innerHTML='<b style="font-weight:500">14:00 路段遮荫率(蓝=遮荫,红=日晒)</b><div style="display:flex;margin-top:3px">'+_bar+'</div><div style="display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div>';}else if(colorMode==='flow')l.innerHTML='<b style="font-weight:500">'+(facMode==='orig'?'步行人流量(原始网络)':flowKind==='short'?'步行人流量(最短路径,不随 τ/λ)':'步行人流量(避热 τ='+DETOUR+'×)')+'</b><br><span class="sw" style="background:#7a3d18"></span>高 &nbsp;<span class="sw" style="background:#f4cf86"></span>低';else if(colorMode==='plain')l.innerHTML='<b style="font-weight:500">路网(无色)</b><br><span class="sw" style="background:#8c8c8c"></span>路网线';else l.innerHTML='<b style="font-weight:500">路网已隐藏</b>';l.innerHTML+='<br><span class="sw" style="background:#0F9E75"></span>最遮荫路 &nbsp;<span class="sw" style="background:#E0791E"></span>最短路';if(colorMode!=='none'){if(facMode==='hi')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>骑楼 &nbsp;<span class="sw" style="background:#2b6cb0"></span>连廊 &nbsp;<span class="sw" style="background:#12a5b0"></span>过街天桥 &nbsp;<span class="sw" style="background:#e07b2a"></span>楼宇连廊 &nbsp;<span class="sw" style="background:#9b59b6"></span>接入桥';else if(facMode==='hiM')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>人工遮荫设施(连廊/骑楼)';}}
 ;(function(){function foldPanel(id){var p=document.getElementById(id);if(!p)return;var btn=document.getElementById(id+'F');if(!btn)return;var folded=p.getAttribute('data-fold')==='1';var kids=Array.from(p.children);kids.forEach(function(c,i){if(i>0)c.style.display=folded?'':'none';});p.setAttribute('data-fold',folded?'0':'1');btn.textContent=folded?'▾':'▸';}['prof','pov','topo'].forEach(function(id){var b=document.getElementById(id+'F');if(b)b.onclick=function(e){e.stopPropagation();foldPanel(id);};});})();
 </script></body></html>'''
 HTML=HTML.replace('__DATA__',dj)
