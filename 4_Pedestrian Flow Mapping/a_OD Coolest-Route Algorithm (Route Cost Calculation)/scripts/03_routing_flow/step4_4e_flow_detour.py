@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """tau-capped heat-avoiding flow reassignment: OD demand exactly mirrors step4_4c (station 14:00 ridership x building weight x exp(-d/350),
 MRT 800 m / BUS 400 m, SNAP 120 m, Ls<20 dropped); only the path rule is changed to "the coolest route with detour <= tau"
 (mirrors the web coolDetour: scan lambda in ascending order, take the first that satisfies len <= tau*Ls+1 = coolest within the cap; fall back to the shortest route).
@@ -66,9 +67,14 @@ def walk(pe,pn,n,sn):
     while x!=sn:
         ei=pe[x]; eis.append(ei); x=pn[x]
     return eis
-ntree=cKDTree(node_xy)
+# main-component snapping (2026-09-18): components of the pair graph, the main one is the only snapping target
+from scipy.sparse import csr_matrix as _csr
+from scipy.sparse.csgraph import connected_components as _cc
+_lab=_cc(_csr((np.ones(npair),(pk[:,0],pk[:,1])),shape=(nN,nN)),directed=False)[1]; MAIN_NODES=np.flatnonzero(_lab==np.argmax(np.bincount(_lab)))
+print(f"main component: {len(MAIN_NODES)} of {nN} nodes",flush=True)
+ntree=cKDTree(node_xy[MAIN_NODES])
 bw=gpd.read_file(BW).to_crs(3414); rep=bw.representative_point()
-bd,bi=ntree.query(np.column_stack([rep.x.values,rep.y.values]))
+bd,bi=ntree.query(np.column_stack([rep.x.values,rep.y.values])); bi=MAIN_NODES[bi]
 bw_w=bw.weight_weekday_14.values
 node_blds=collections.defaultdict(float)             # node -> sum of w (building-type summary not needed in this run)
 nb=0
@@ -82,7 +88,7 @@ st=gpd.read_file(ST).to_crs(3414)
 # per row.  Earlier tables: v1 (per exit x line code, interchanges counted once per code) and v2 (line codes split) are superseded.
 _w=(st['inj_weekday_14'].values if 'inj_weekday_14' in st.columns else st['tot_weekday_14'].values/np.where(np.nan_to_num(st['n_exits'].values,nan=1)>0,np.nan_to_num(st['n_exits'].values,nan=1),1)).astype(float)
 st['w_origin']=_w; print(f'origin weights: {len(st)} rows, sum 14:00 = {np.nansum(_w):,.0f} (per-exit shares)',flush=True)
-sd,si=ntree.query(np.column_stack([st.geometry.x.values,st.geometry.y.values]))
+sd,si=ntree.query(np.column_stack([st.geometry.x.values,st.geometry.y.values])); si=MAIN_NODES[si]
 stas=[(int(si[k]),float(st.w_origin.values[k]),st.source.values[k]) for k in range(len(st))
       if sd[k]<=SNAP_MAX and np.isfinite(st.w_origin.values[k]) and st.w_origin.values[k]>0 and int(si[k])<nN]
 print(f"snapped: buildings {nb} | stations {len(stas)} | {time.time()-t0:.0f}s",flush=True)

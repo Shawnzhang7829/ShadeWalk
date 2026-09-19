@@ -57,7 +57,8 @@ were re-run on the published network (469,434 edges, 21 s + 91 s). The graph is 
 (`shade_bld`): the production layer of June had been sampled with the building-footprint mask of the previous arcade data
 set (the mask on disk had been updated together with the arcade shadows). On 2026-09-17 the production layer was regenerated
 with the released script and the rasters on disk; it is now identical, on every edge, to the corrected per-edge shade used by the
-paper chain, and the routing / flow products, the hourly edge shade and the web app were recomputed from it.
+paper chain, and the routing / flow products, the hourly edge shade and the web app were recomputed from it. On 2026-09-18 the five routing / flow scripts were changed to snap station exits and demand buildings to the main
+connected component of the network (see PROVENANCE.md), and the flow products and the web app were recomputed once more.
 
 ## 4. Results (Singapore, 14:00, all trips)
 

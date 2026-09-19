@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """On the ORIGINAL network (footpath only, src=footpath, no shade-facility shortcuts) recompute the per-edge flow flow_orig on the same basis,
 for the nav_app flow mode "original only" comparison of the flow distribution before/after the modification. Method as in step4_4c (station ridership distributed by surrounding building weight x distance decay,
 accumulated along shortest routes), but the graph is built from footpath edges only. Writes the column flow_orig back into step4_4_edges_flow_SG.gpkg. pyenv, exclusive."""
@@ -23,9 +24,12 @@ for i in range(len(edges)):
     if G.has_edge(u,v) and G[u][v]['w_len']<=w: continue
     G.add_edge(u,v,w_len=w)
 print(f"original (footpath) graph nodes {G.number_of_nodes()} edges {G.number_of_edges()} | {time.time()-t0:.0f}s",flush=True)
-ntree=cKDTree(node_xy)
+# main-component snapping (2026-09-18): the main connected component of this graph is the only snapping target
+MAIN_NODES=np.array(sorted(max(nx.connected_components(G),key=len)),dtype=np.int64)
+print(f"main component: {len(MAIN_NODES)} of {G.number_of_nodes()} nodes",flush=True)
+ntree=cKDTree(node_xy[MAIN_NODES])
 def snap_many(gs):
-    P=np.column_stack([gs.x.values,gs.y.values]); d,i=ntree.query(P); return i,d
+    P=np.column_stack([gs.x.values,gs.y.values]); d,i=ntree.query(P); return MAIN_NODES[i],d
 bw=gpd.read_file(BW).to_crs(3414); rep=bw.representative_point()
 bi,bd=snap_many(rep); bw_w=bw.weight_weekday_14.values
 node_blds=collections.defaultdict(list)

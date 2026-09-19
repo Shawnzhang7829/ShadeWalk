@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """Step4-4c city-wide: station access routing + pedestrian flow. Each path has a station (MRT/BUS) at one end and any building at the other.
 Station 14:00 ridership is distributed by surrounding building weight x distance decay (MRT 800 m / BUS 400 m catchment, beta = 350 m, local-cutoff Dijkstra).
 Shortest route + coolest route; ridership accumulated along the path = per-edge pedestrian flow. Summarised by building type. pyenv."""
@@ -24,9 +25,12 @@ for i in range(len(edges)):
     G.add_edge(u,v,w_len=w,w_cool=w*((1.0-sf[i])+LAM),length=w,shade=float(sf[i]))
 print(f"graph nodes {G.number_of_nodes()} edges {G.number_of_edges()} | {time.time()-t0:.0f}s",flush=True)
 
-ntree=cKDTree(node_xy)
+# main-component snapping (2026-09-18): the main connected component of this graph is the only snapping target
+MAIN_NODES=np.array(sorted(max(nx.connected_components(G),key=len)),dtype=np.int64)
+print(f"main component: {len(MAIN_NODES)} of {G.number_of_nodes()} nodes",flush=True)
+ntree=cKDTree(node_xy[MAIN_NODES])
 def snap_many(gs):
-    P=np.column_stack([gs.x.values,gs.y.values]); d,i=ntree.query(P); return i,d
+    P=np.column_stack([gs.x.values,gs.y.values]); d,i=ntree.query(P); return MAIN_NODES[i],d
 bw=gpd.read_file(BW).to_crs(3414); rep=bw.representative_point()
 bi,bd=snap_many(rep); bw_w=bw.weight_weekday_14.values; bw_t=bw.building_archetype.values
 node_blds=collections.defaultdict(list)   # node -> [(w,btype)]
