@@ -39,7 +39,7 @@ Module 2  covered_linkway_SG_island_tv_pednet_bridged.gpkg ─┬─> Module 1 (
                                                             └─> Module 5 (linkway centrelines)
 Module 3a arcade-positive views ──> Module 3b ─┬─ step2_arcade_sg.gpkg, step2_building_remain_sg.gpkg ──> Module 1 (ADSM, ADSMB, DSMremain, BREMAIN)
                                               └─ step2b_runs_sg.gpkg, step2_arcade_sg.gpkg ──────────────> Module 5 (arcade centrelines)
-Module 4b station_hourly_ridership_v4.gpkg, building_hourly_weight.gpkg, pedestrian_network_filtered.gpkg ──> Modules 4a, 5, 2
+Module 4b station_hourly_ridership_v4.gpkg, building_hourly_weight_gfacorr.gpkg, pedestrian_network_filtered.gpkg ──> Modules 4a, 5, 2
 Module 1  Shadow_2pm_h14.tif, Category_2pm_h14.tif (and 24-band rasters) ──> Module 4a (edge shade) and the web tool
 Module 5  step4_network_final.gpkg ──> Module 4a (routing graph)
 ```
@@ -55,7 +55,7 @@ refers to the folders above, and the `INPUT_DATA.md` of each module gives the fu
 
 | Data | What is used | Provider and licence | Module | Where to get it |
 |---|---|---|---|---|
-| Building footprints with height, storeys and function | 118,782 footprints of Singapore with building height, storeys, archetype (function class) and gross floor area; island boundary (14 polygons) | City Syntax Lab building dataset (OpenStreetMap footprints; heights and functions compiled by the lab). CC BY 4.0; footprints (c) OpenStreetMap contributors (ODbL) | 1 (building DSM via module 3b), 2 (exclusion mask), 3a / 3b (arcade projection), 4a / 4b (destination weights) | figshare `5_base_data/SG_buildings_footprint_height_function.zip`, `SG_island_boundary.zip` |
+| Building footprints with height, storeys and function | 118,782 footprints of Singapore with building height, storeys, archetype (function class) and gross floor area (`gfa_corr` = storeys x footprint is the value used for the destination weights; the shipped `gfa_orig` carries the footprint area where the storey count was unknown); island boundary (14 polygons) | City Syntax Lab building dataset (OpenStreetMap footprints; heights and functions compiled by the lab). CC BY 4.0; footprints (c) OpenStreetMap contributors (ODbL) | 1 (building DSM via module 3b), 2 (exclusion mask), 3a / 3b (arcade projection), 4a / 4b (destination weights) | figshare `5_base_data/SG_buildings_footprint_height_function.zip`, `SG_island_boundary.zip` |
 | Tree-canopy height | Meta 1 m global canopy height map, clipped to Singapore (canopy height above ground) | Meta / WRI global canopy height maps (Tolan et al., 2024), CC BY 4.0 | 1 (CDSM, vegetation shadow) | figshare `1_shadow_model/rasters/SG_CDSM_tree_1m.tif` |
 | Terrain | ALOS PALSAR radiometrically terrain-corrected DEM (12.5 m), resampled to the 1 m city grid | JAXA / METI ALOS PALSAR, distributed by ASF DAAC (free with attribution) | 1 (DEM) | figshare `1_shadow_model/rasters/SG_DEM_1m.tif` |
 | Satellite imagery, 0.3 m | Google Earth imagery mosaicked to SVY21; 1,111 annotated 1024 px training tiles (808 train / 303 validation) | Google (terms of use; tiles provided for research reproducibility only) | 2 (covered-linkway extraction) | training tiles: figshare `2_covered_linkway`; the island mosaic is not redistributed |

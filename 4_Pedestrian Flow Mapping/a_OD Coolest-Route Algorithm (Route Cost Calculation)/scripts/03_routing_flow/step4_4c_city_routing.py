@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 2026-09-21 corrected gross floor area: the building weights come from building_hourly_weight_gfacorr.gpkg (Module 4b tools/building_weights_corrected_gfa.py: A_j = gfa_corr x occupancy density, gfa_corr = resolved storeys x footprint of the released building dataset) instead of the export on the shipped gross_floor_area, which carried the footprint area for 74.3 % of the buildings (missing-data sentinel); only the BW path changed.
 # 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """Step4-4c city-wide: station access routing + pedestrian flow. Each path has a station (MRT/BUS) at one end and any building at the other.
 Station 14:00 ridership is distributed by surrounding building weight x distance decay (MRT 800 m / BUS 400 m catchment, beta = 350 m, local-cutoff Dijkstra).
@@ -7,7 +8,7 @@ import numpy as np, geopandas as gpd, pandas as pd, time, collections
 from scipy.spatial import cKDTree
 import networkx as nx
 OUT=r"D:\Claude\SVI_FFW\output\step5_nav_webapp"
-BW=r"D:\Claude\UNA\Patronage_Flow\output\building_hourly_weight.gpkg"
+BW=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight_gfacorr.gpkg"   # 2026-09-21 corrected GFA
 ST=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\station_hourly_ridership_v4.gpkg"   # station table v4 (2026-09-17)
 LAM=0.15; BETA=350.0; SNAP_MAX=120.0; D_MRT=800.0; D_BUS=400.0
 t0=time.time()
