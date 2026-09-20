@@ -13,28 +13,24 @@ Data record (input layers referred to below): figshare, https://doi.org/10.6084/
 | Arcade strips | `step2_arcade_sg.gpkg` | 10,076 polygons, `bld_h`, `arc_h` | Module 3b | web tool layers, arcade DSM top for the 3D view |
 | Covered linkways | `covered_linkway_SG_island_tv_pednet_bridged.gpkg` | 6,148 polygons | Module 2 | web tool layers |
 | Remaining buildings | `step2_building_remain_sg.gpkg` | 103,112 polygons with `height` | Module 3b | web tool 3D buildings |
-| Station ridership | `station_hourly_ridership_v4.gpkg` | 5,758 points = 591 MRT / LRT exit points + 5,167 bus stops (one record per real exit point), `PT_CODE` (first line code), `LTA_CODE`, `CODES` (all line codes sharing the exit), `source`, `n_exits` (real exit points of the station), hourly `in_/out_/tot_/inj_weekday_HH` and weekend columns, totals | Module 4b (`export_station_hourly.py` + `tools/station_table_real_exits.py`) | demand origins (`inj_weekday_14` = station total / real exit points; an interchange is one station; `tot_*` is the whole-station value and is not used per record). Use an export made with the current Module 4b (interchange codes such as `NS24/NE6/CC1` split over their line codes, duplicated bus-stop codes shared); earlier exports double-count interchanges. |
-| Building weights | `building_hourly_weight_gfa.gpkg` | 118,782 polygons, `building_archetype`, `gross_floor_area` (= `gfa_corr` of the released building dataset `SG_buildings_footprint_height_function.shp`), `weight_weekday_HH` (48 hourly columns), peaks and totals | Module 4b (`tools/building_weights.py`) | demand destinations (`weight_weekday_14`), building types in the metrics |
 | Subzone boundaries | `SG_Subzone/SG_subzone boundary 2019_SVY21.shp` | Master Plan 2019 subzone boundaries, EPSG:3414 | data.gov.sg open data (Master Plan 2019 Subzone Boundary; not part of the data record) | maps, sub-zone experiments |
 | Road section lines | `RoadSectionLine_Mar2026/RoadSectionLine.shp` | LTA road centre lines | LTA DataMall | web tool basemap layer |
 | Tree points | `SG point tree/Point tree.shp` | about 697,000 tree points with size attributes | trees.sg open tree map (web tool visualisation only) | web tool 3D trees |
+| Station ridership, building weights, per-edge flows | `station_hourly_ridership_v4.gpkg`, `building_hourly_weight_gfa.gpkg`, `step4_4_edges_flow_SG.gpkg` | see Module 4b | Module 4b | web tool (flow layers, HDB footprints, route cards) |
 | Demo OD pairs | `webapp/dist/demo_scenarios.json` | precomputed demonstration origin-destination pairs (`step4_demo_scenarios.py`) | this module | web tool |
 
-Parameters: `LAM` 0.15 (routing script) / 0.2 (paper, lambda sweep), `BETA` 350 m (distance decay), `D_MRT` 800 m,
-`D_BUS` 400 m, `SNAP_MAX` 120 m, minimum shortest length 20 m, 2 m sampling step along edges, sun position of
-13:30 for the half-hour-centred 14:00 shadow.
+Parameters: 2 m sampling step along edges, sun position of 13:30 for the half-hour-centred 14:00 shadow, 0.5 m
+endpoint clustering. The demand and routing parameters (lambda, distance decay, catchments, snapping) are listed in
+the `INPUT_DATA.md` of Module 4b.
 
 ## Products
 
-The derived products below are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request.
+The derived products below are not part of the data record; they are regenerated from the released inputs with the scripts of this module and are available from the corresponding author on request. The flow products (`step4_4_edges_flow_SG.gpkg`, `flow_*.npy`, the OD metrics and sensitivity summaries) are listed in Module 4b.
 
 | File | Content |
 |---|---|
 | `step4_network_final_prep.gpkg` | network with `comp` and mapped `src` |
 | `step4_4_edges_SG.gpkg`, `step4_4_nodes_SG.gpkg` | graph edges (`u`, `v`, `shade_full`, `shade_bld`) and nodes |
-| `step4_4_edges_flow_SG.gpkg` | + `flow_short`, `flow_cool`, `flow_orig` |
-| `flow_lam_<lambda>.npy`, `flow_cooltau_<tau>.npy`, `flow_cool_orig_SG.npy` | per-edge flows (main component order) for the sensitivity runs |
 | `edge_facility_SG.npy`, `edge_shade_nofac_SG.npy`, `edge_px_SG.npz`, `edge_class_1m_totals.csv` | per-edge facility class, no-facility shade, per-metre shade attribution |
 | `edge_shade_hourly_SG.npz` | per-edge shade fraction for every hour 08-18 (keys `h08` ... `h18`, full row order of `step4_4_edges_SG.gpkg`; `h14` = `shade_full`) |
-| `step4_4_od_metrics_SG.csv`, `step4_4f_flow_lam_summary.csv`, `step4_4e_flow_detour_summary.csv` | aggregate metrics by building type / lambda / tau |
 | `SUB_SG_BUILDING_SHADOW_h14_1m.tif`, `SUB_SG_BLDTREE_SHADOW_h14_1m.tif` | baseline shadow rasters (uint8) |

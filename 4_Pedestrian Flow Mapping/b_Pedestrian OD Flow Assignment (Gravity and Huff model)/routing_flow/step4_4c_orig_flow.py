@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Building weights: building_hourly_weight_gfa.gpkg (Module 4b tools/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
+# Building weights: building_hourly_weight_gfa.gpkg (Module 4b demand_inputs/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
 # 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """On the ORIGINAL network (footpath only, src=footpath, no shade-facility shortcuts) recompute the per-edge flow flow_orig on the same basis,
 for the nav_app flow mode "original only" comparison of the flow distribution before/after the modification. Method as in step4_4c (station ridership distributed by surrounding building weight x distance decay,
@@ -39,7 +39,7 @@ for k in range(len(bw)):
     if bd[k]<=SNAP_MAX and np.isfinite(bw_w[k]) and bw_w[k]>0 and int(bi[k]) in G:
         node_blds[int(bi[k])].append(float(bw_w[k])); nb+=1
 st=gpd.read_file(ST).to_crs(3414); si,sd=snap_many(st.geometry)
-# Origin weight (station table v4, 2026-09-17): one record per REAL exit point / bus stop (tools/station_table_real_exits.py of
+# Origin weight (station table v4, 2026-09-17): one record per REAL exit point / bus stop (demand_inputs/station_table_real_exits.py of
 # Module 4b).  An interchange is one station: its tap-in + tap-out is divided over its real exit points (coincident exit points of
 # several line codes count once), inj_* = station total / real exit points; tot_* is the whole-station value and must not be used
 # per row.  Earlier tables: v1 (per exit x line code, interchanges counted once per code) and v2 (line codes split) are superseded.

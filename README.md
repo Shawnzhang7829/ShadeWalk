@@ -26,8 +26,8 @@ through the figshare data record of the paper (https://doi.org/10.6084/m9.figsha
 | [`3_Arcade Extraction and Projection/a_GSV Image Arcade Detection`](<3_Arcade Extraction and Projection/a_GSV Image Arcade Detection/README.md>) | 3 Arcade detection (CLIP ViT-L/14 + probe) | Detection of arcades in street-view images with CLIP embeddings and linear probes; includes the probes and their training labels | B |
 | [`3_Arcade Extraction and Projection/b_Arcade Projection to Building Footprint`](<3_Arcade Extraction and Projection/b_Arcade Projection to Building Footprint/README.md>) | 4 Facade projection (1.5-3 m arcade) | Ray-casting projection of positive views onto street-facing facades, edge-based arcade decision, 2 m / 3 m arcade strips and remaining building footprints | A |
 | [`5_OSM Network Reconstruction`](<5_OSM Network Reconstruction/README.md>) | 5 Network rebuild (+ facility centrelines) | Insertion of arcade and linkway centrelines into the OSM pedestrian network with rule-based cleaning and connection | A |
-| [`4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)`](<4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/README.md>) | 6 Routing cost (rho = (1 - sigma) + lambda) | Per-edge shade, shortest vs coolest routing, lambda / detour sensitivity, station-anchored flows; generators and English build of the ShadeWalk web tool | A |
-| [`4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)`](<4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)/README.md>) | 7 Pedestrian flow (gravity OD, Huff, Dijkstra) | madina patronage betweenness: hourly transit ridership distributed to buildings weighted by floor area and occupancy schedules | A |
+| [`4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)`](<4_Pedestrian Flow Mapping/a_OD Coolest-Route Algorithm (Route Cost Calculation)/README.md>) | 6 Routing cost (rho = (1 - sigma) + lambda) | Per-edge shade from the shadow rasters, street resistance and coolest-route cost, shade-source attribution per edge; generators and English build of the ShadeWalk web tool | A |
+| [`4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)`](<4_Pedestrian Flow Mapping/b_Pedestrian OD Flow Assignment (Gravity and Huff model)/README.md>) | 7 Pedestrian flow (gravity OD, Huff, Dijkstra) | Demand tables (station ridership, building weights from floor area and occupancy schedules); 14:00 transit ridership distributed to buildings by Huff choice with distance decay and routed on the shortest and the coolest path; lambda / detour sensitivity | A |
 
 Environments A (GIS, Python 3.11), B (QGIS Python 3.12 with torch) and C (conda `sam2`, Python 3.10) are
 specified in [`docs/ENVIRONMENTS.md`](docs/ENVIRONMENTS.md).
@@ -39,9 +39,11 @@ Module 2  covered_linkway_SG_island_tv_pednet_bridged.gpkg ─┬─> Module 1 (
                                                             └─> Module 5 (linkway centrelines)
 Module 3a arcade-positive views ──> Module 3b ─┬─ step2_arcade_sg.gpkg, step2_building_remain_sg.gpkg ──> Module 1 (ADSM, ADSMB, DSMremain, BREMAIN)
                                               └─ step2b_runs_sg.gpkg, step2_arcade_sg.gpkg ──────────────> Module 5 (arcade centrelines)
-Module 4b station_hourly_ridership_v4.gpkg, building_hourly_weight_gfa.gpkg, pedestrian_network_filtered.gpkg ──> Modules 4a, 5, 2
+Module 4b pedestrian_network_filtered.gpkg ──> Modules 2, 5
 Module 1  Shadow_2pm_h14.tif, Category_2pm_h14.tif (and 24-band rasters) ──> Module 4a (edge shade) and the web tool
 Module 5  step4_network_final.gpkg ──> Module 4a (routing graph)
+Module 4a step4_4_edges_SG.gpkg, step4_4_nodes_SG.gpkg, edge_facility_SG.npy ──> Module 4b (routing / flows) and the web tool
+Module 4b station_hourly_ridership_v4.gpkg, building_hourly_weight_gfa.gpkg, step4_4_edges_flow_SG.gpkg ──> the web tool (Module 4a)
 ```
 
 Every module folder contains a `README.md` (method, scripts, parameters, commands, results) and an
@@ -55,14 +57,14 @@ refers to the folders above, and the `INPUT_DATA.md` of each module gives the fu
 
 | Data | What is used | Provider and licence | Module | Where to get it |
 |---|---|---|---|---|
-| Building footprints with height, storeys and function | 118,782 footprints of Singapore with building height, storeys, archetype (function class) and gross floor area (`gfa_corr`, storeys x footprint, is the value used for the destination weights); island boundary (14 polygons) | City Syntax Lab building dataset (OpenStreetMap footprints; heights and functions compiled by the lab). CC BY 4.0; footprints (c) OpenStreetMap contributors (ODbL) | 1 (building DSM via module 3b), 2 (exclusion mask), 3a / 3b (arcade projection), 4a / 4b (destination weights) | figshare `5_base_data/SG_buildings_footprint_height_function.zip`, `SG_island_boundary.zip` |
+| Building footprints with height, storeys and function | 118,782 footprints of Singapore with building height, storeys, archetype (function class) and gross floor area (`gfa_corr`, storeys x footprint, is the value used for the destination weights); island boundary (14 polygons) | City Syntax Lab building dataset (OpenStreetMap footprints; heights and functions compiled by the lab). CC BY 4.0; footprints (c) OpenStreetMap contributors (ODbL) | 1 (building DSM via module 3b), 2 (exclusion mask), 3a / 3b (arcade projection), 4b (destination weights) | figshare `5_base_data/SG_buildings_footprint_height_function.zip`, `SG_island_boundary.zip` |
 | Tree-canopy height | Meta 1 m global canopy height map, clipped to Singapore (canopy height above ground) | Meta / WRI global canopy height maps (Tolan et al., 2024), CC BY 4.0 | 1 (CDSM, vegetation shadow) | figshare `1_shadow_model/rasters/SG_CDSM_tree_1m.tif` |
 | Terrain | ALOS PALSAR radiometrically terrain-corrected DEM (12.5 m), resampled to the 1 m city grid | JAXA / METI ALOS PALSAR, distributed by ASF DAAC (free with attribution) | 1 (DEM) | figshare `1_shadow_model/rasters/SG_DEM_1m.tif` |
 | Satellite imagery, 0.3 m | Google Earth imagery mosaicked to SVY21; 1,111 annotated 1024 px training tiles (808 train / 303 validation) | Google (terms of use; tiles provided for research reproducibility only) | 2 (covered-linkway extraction) | training tiles: figshare `2_covered_linkway`; the island mosaic is not redistributed |
 | Street-level imagery, four views per point | Four perspective views per panorama point every 20 m along the road network (about 148,850 points in Singapore) | Google Street View Static API (Google terms of use; images not redistributed) | 3a (arcade detection), 3b (projection onto building footprints) | https://developers.google.com/maps/documentation/streetview/overview (also in figshare `3_arcade.txt`); detection probes, labels and sampling conventions are in module 3a |
-| Pedestrian network | OpenStreetMap `highway` extract of Singapore (June 2026), cleaned to 404,613 pedestrian-passable segments | OpenStreetMap contributors, ODbL | 5 (network reconstruction), 4b (flow model), 2 (network filter) | figshare `5_base_data/SG_osm_lines.gpkg` |
-| Public transport: stops, stations and passenger volumes | Bus stop locations (Aug 2025), MRT / LRT stations (Aug 2025) and station exits (Feb 2025); monthly passenger volumes by bus stop and train station and by origin-destination (hourly tap-in / tap-out) | Land Transport Authority of Singapore, LTA DataMall, Singapore Open Data Licence | 4b (demand origins; 4a uses its station-ridership export) | locations: figshare `4_OD_flow/Station_Location.zip`; volumes: https://datamall.lta.gov.sg/content/datamall/en/dynamic-data.html (also in figshare `4_OD_flow.txt`) |
-| Building occupancy schedules | 20 EnergyPlus archetype models (SGP 2025 V5): people per floor area and hourly occupancy schedules per building type | Singapore building-archetype models (SGP 2025 V5) | 4b (hourly destination weights of the gravity model; 4a uses its building-weight export) | figshare `4_OD_flow/AllArhcetypes_SGP_2025_V5.zip` |
+| Pedestrian network | OpenStreetMap `highway` extract of Singapore (June 2026), cleaned to 404,613 pedestrian-passable segments | OpenStreetMap contributors, ODbL | 5 (network reconstruction), 4b (pedestrian subset), 2 (network filter) | figshare `5_base_data/SG_osm_lines.gpkg` |
+| Public transport: stops, stations and passenger volumes | Bus stop locations (Aug 2025), MRT / LRT stations (Aug 2025) and station exits (Feb 2025); monthly passenger volumes by bus stop and train station and by origin-destination (hourly tap-in / tap-out) | Land Transport Authority of Singapore, LTA DataMall, Singapore Open Data Licence | 4b (demand origins) | locations: figshare `4_OD_flow/Station_Location.zip`; volumes: https://datamall.lta.gov.sg/content/datamall/en/dynamic-data.html (also in figshare `4_OD_flow.txt`) |
+| Building occupancy schedules | 20 EnergyPlus archetype models (SGP 2025 V5): people per floor area and hourly occupancy schedules per building type | Singapore building-archetype models (SGP 2025 V5) | 4b (hourly destination weights of the gravity model) | figshare `4_OD_flow/AllArhcetypes_SGP_2025_V5.zip` |
 | Meteorological forcing | Hourly UMEP-format forcing of station S50 (Clementi Road): 2026-03-01 (paper run) and the four equinox / solstice days | Meteorological Service Singapore | 1 (shadow model) | figshare `1_shadow_model/forcing/` (five UMEP-format files) |
 
 ## What is and is not in this repository
@@ -96,7 +98,7 @@ Verification performed on the released code (2026-09-10, on the original worksta
 | 3a | detection smoke run (150 Tier-1 panoramas) | identical to the production detections: 407 positive views, Jaccard 1.000, max probability difference 0.0 |
 | 3b | full Singapore projection chain (project -> edge decision -> buffer / split) | identical to the published vectors: 28,415 points, 18,032 segments, 7,219 runs, 10,076 arcade strips, 103,112 remaining buildings, same areas and lengths |
 | 4a | network preparation and per-edge shade (469,434 edges) | graph identical (components, u / v); shade values identical on 99.1 % of edges, the remaining 0.9 % differ because the shadow rasters on disk post-date the June production run (arcade update) |
-| 4b | single-pass madina model on the CBD smoke bounding box (6 x 6.5 km), one hour slot | runs end-to-end in 1.3 min: 15,582 edges, 756 origins, 13,400 destinations, flow on 2,738 edges (p99 298, max 2,390 pedestrians) |
+| 4b | demand-input exports re-run with the repository package (2026-09-21) | pedestrian subset (142,095 segments), station table v4 (5,758 records) and building weights (118,782 buildings, 55 columns) identical to the products in use; occupancy table reproduced from the IDF files |
 | 5 | full Singapore network reconstruction chain (6 stages) | identical to the published layers at every stage: 15,873 / 16,467 / 404,613 / 400,151 / 459,646 / 469,434 segments, same source composition and segment lengths |
 
 All Python scripts were checked to be syntactically valid and, except for the path adaptations listed in
@@ -139,12 +141,11 @@ Suggested availability statements (cite the version DOI of the release used for 
 > on request.
 
 Please cite the ShadeWalk paper (reference to be added on publication) and this repository (`CITATION.cff`).
-The shadow engine builds on SOLWEIG-GPU (Kamath et al., 2026, JOSS) and SOLWEIG (Lindberg et al., 2008); the flow
-model on madina (Alhassan and Sevtsuk, 2024); the segmentation model on Segment Anything, GeoSAM and clDice; the
-arcade detector on CLIP.
+The shadow engine builds on SOLWEIG-GPU (Kamath et al., 2026, JOSS) and SOLWEIG (Lindberg et al., 2008); the
+segmentation model on Segment Anything, GeoSAM and clDice; the arcade detector on CLIP.
 
 ## Licence
 
 MIT for the ShadeWalk code (see `LICENSE`). `1_SOLWEIG_GPU (ADSM LDSM)` is a derivative of SOLWEIG-GPU and is
 GPL-3.0 (see the `LICENSE` file in that folder). Third-party components keep their own licences (Apache-2.0 for
-Segment Anything / SAM 2, MIT for GeoSAM, clDice, CLIP and madina).
+Segment Anything / SAM 2, MIT for GeoSAM, clDice and CLIP).

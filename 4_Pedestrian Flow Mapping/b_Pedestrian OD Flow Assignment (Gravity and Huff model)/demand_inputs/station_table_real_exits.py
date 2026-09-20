@@ -18,7 +18,7 @@ This tool rebuilds the table from the raw month files on the geometry of the exp
   * codes of the export that are absent from the raw month keep 0; raw codes without a row in the export are reported (no geometry).
 Usage
 -----
-python tools/station_table_real_exits.py --export output/station_hourly_ridership.gpkg
+python demand_inputs/station_table_real_exits.py --export output/station_hourly_ridership.gpkg
        --raw-dir "Station flow/2026-01/node" --tag 202601 --out output/station_hourly_ridership_v4.gpkg [--weekdays 22 --weekend-days 9]
 Check printed at the end: every covered station's records add up to the raw value in all 48 (day type, hour) slots.
 """

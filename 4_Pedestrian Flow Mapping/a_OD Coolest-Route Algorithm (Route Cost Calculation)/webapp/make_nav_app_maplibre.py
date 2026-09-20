@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Building weights: building_hourly_weight_gfa.gpkg (Module 4b tools/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
+# Building weights: building_hourly_weight_gfa.gpkg (Module 4b demand_inputs/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
 """MapLibre GL build of the heat-avoidance navigation app (GPU true vectors, crisp at any zoom).
 True network polylines (binned by shade fraction / pedestrian flow into a few MultiLineStrings) + arcade / covered linkway / building footprint vector polygons + tree / shadow / class raster layers
 + OneMap/OSM tile basemap + JS Dijkstra live routing. Coordinates are 3857-relative (JS converts back to lng/lat); data is inlined so the page opens by double-click. pyenv."""

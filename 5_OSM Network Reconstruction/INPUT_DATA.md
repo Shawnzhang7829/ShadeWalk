@@ -9,7 +9,7 @@ Data record (input layers referred to below): figshare, https://doi.org/10.6084/
 | Arcade strips | `step2_arcade_sg.gpkg` | 10,076 polygons | Module 3b | `step4_1_city.py` (offset direction), `step4_3b_link.py` (landing test) |
 | Covered linkways | `covered_linkway_SG_island_tv_pednet_bridged.gpkg` | 6,148 polygons | Module 2 | `step4_1_city.py` (Voronoi centrelines), `step4_3b_link.py` |
 | Remaining building footprints | `step2_building_remain_sg.gpkg` | 103,112 polygons, `height` | Module 3b | `step4_3b_link.py`, `step4_4_global.py` (through-building test) |
-| Alternative pedestrian layers (comparison only) | `SG-Footpath/Footpath.shp`, `SG-Road/RoadSectionLine.shp`, `pedestrian_network_filtered.gpkg` | LTA footpath polygons, LTA road section lines, madina-filtered OSM network of Module 4b | LTA DataMall; Module 4b | the earlier sub-zone experiments (not shipped) compared these sources before OSM was selected |
+| Alternative pedestrian layers (comparison only) | `SG-Footpath/Footpath.shp`, `SG-Road/RoadSectionLine.shp`, `pedestrian_network_filtered.gpkg` | LTA footpath polygons, LTA road section lines, the pedestrian-passable OSM subset of Module 4b | LTA DataMall; Module 4b | the earlier sub-zone experiments (not shipped) compared these sources before OSM was selected |
 
 Parameters are listed in the README (5 m facility joins, 3 m spur removal, 15 m OSM and facility-to-OSM joins,
 30 m arcade-corner links, 8 m duplicate band with 80 % overlap and 30 deg parallel test, 0.5 m endpoint clustering).

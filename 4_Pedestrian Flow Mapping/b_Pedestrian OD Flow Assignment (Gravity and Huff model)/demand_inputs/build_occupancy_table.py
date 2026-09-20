@@ -13,7 +13,7 @@ Output:
   - DataFrame: arch x (day_type, hour) saved to CSV/parquet for inspection
 
 Usage:
-  python -m Patronage_Flow.build_occupancy_table
+  python -m demand_inputs.build_occupancy_table      (from the folder that contains demand_inputs/)
 """
 from __future__ import annotations
 import re
@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from Patronage_Flow import Constants as C
+from demand_inputs import Constants as C
 
 
 # ---------------------------------------------------------------------------
@@ -347,8 +347,8 @@ def build_density_table(idf_dir: Path) -> pd.DataFrame:
 
 
 def main():
-    idf_dir = C.ROOT / "AllArhcetypes_SGP_2025_V5"
-    out_path = C.ROOT / "Patronage_Flow" / "lookup" / "occupancy_density.parquet"
+    idf_dir = C.IDF_DIR
+    out_path = C.OCCUPANCY_DENSITY_PARQUET
     out_path_csv = out_path.with_suffix(".csv")
 
     df = build_density_table(idf_dir)

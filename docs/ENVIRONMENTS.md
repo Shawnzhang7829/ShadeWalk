@@ -4,7 +4,7 @@ The pipeline was developed and run on one Windows 11 workstation (NVIDIA RTX 600
 
 ## Environment A - `geo` (Python 3.11.9, pyenv-win)
 
-Used by: raster preparation in Module 1, Module 3b (projection), Module 4a (edge shade, routing, flows), Module 4b (madina flows), Module 5 (network reconstruction).
+Used by: raster preparation in Module 1, Module 3b (projection), Module 4a (edge shade, web tool), Module 4b (demand tables, routing, flows), Module 5 (network reconstruction).
 
 | Package | Version |
 |---|---|
@@ -24,7 +24,6 @@ Used by: raster preparation in Module 1, Module 3b (projection), Module 4a (edge
 | joblib | 1.5.3 |
 | pillow | 12.2.0 |
 | tqdm | 4.67.3 |
-| madina | 0.0.15 (editable install of the upstream repository, see Module 4b) |
 
 Install (example):
 

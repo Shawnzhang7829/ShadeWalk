@@ -1,8 +1,10 @@
 # Module 4a - Coolest-route algorithm and route-cost calculation
 
-Assigns station-anchored pedestrian demand to the reconstructed network under two routing rules - shortest path
-and coolest path - and quantifies the shade gained, the detour accepted and the flow carried by each shade
-facility. The same routing core drives the ShadeWalk web tool (`webapp/`). Environment A.
+Turns the reconstructed pedestrian network of Module 5 into a routing graph with a 14:00 shade fraction on every
+edge (from the shadow rasters of Module 1), defines the street resistance and the edge cost of the coolest-route
+rule, attributes the shade of every edge to its source (building, tree, arcade, covered linkway) and generates the
+ShadeWalk web tool (`webapp/`), whose in-browser Dijkstra uses the same cost. The city-wide OD assignment and the
+flow products on these costs are Module 4b (`routing_flow/`). Environment A.
 
 ## 1. Route cost
 
@@ -18,19 +20,17 @@ shortest route = argmin of  sum(l_i)                        (lambda -> infinity)
 `lambda` is the *shade reward* parameter: the extra distance a walker accepts in exchange for shade. The paper uses
 `lambda = 0.2`, i.e. a reward ratio `eta = lambda / (1 + lambda) = 1/6`: one metre in the sun costs as much as six
 metres in the shade, so a detour pays off only if at least one sixth of the extra length is converted into avoided
-sun. `step4_4f_flow_lam.py` sweeps 18 values of lambda (3.0 ... 0.001); `step4_4e_flow_detour.py` is the alternative
-formulation with a hard detour cap `tau` (coolest route among paths with length <= tau x shortest).
+sun. The lambda sweep (18 values, 3.0 ... 0.001) and the alternative formulation with a hard detour cap tau are run
+by the flow scripts of Module 4b (`step4_4f_flow_lam.py`, `step4_4e_flow_detour.py`).
 
-## 2. Demand model
+## 2. Edge shade
 
-Every trip has one end at a transit station (MRT / LRT exit or bus stop) and the other at a building.
-Station demand = 14:00 weekday ridership of each origin record (`inj_weekday_14` of `station_hourly_ridership_v4.gpkg`,
-Module 4b: the station's tap-in + tap-out divided over its real exit points; an interchange is one station whose
-line codes share the same exits; `tot_weekday_14` holds the whole-station value and must not be used per record). It is distributed to the buildings
-within the walking catchment (network distance <= 800 m for MRT / LRT, <= 400 m for bus, cut-off Dijkstra) in
-proportion to `building weight x exp(-d / 350 m)`, where the building weight is the 14:00 occupancy weight of
-Module 4b (`weight_weekday_14`). Stations and buildings snap to the nearest network node within 120 m; pairs closer
-than 20 m are dropped. Flow on an edge = sum of the demand of all OD pairs whose route uses the edge.
+`sigma_i` is sampled every 2 m along the edge from the full-system 14:00 shadow raster of Module 1 (buildings, trees,
+covered linkways, arcades; 1 = sunlit, 0 = shaded) and, for the building-only baseline, from a building-only shadow
+raster computed here; edges through building footprints count as fully shaded (indoor). The hourly variant samples the
+24-band raster for every hour 08-18 and feeds the Daily-time slider of the web tool. The dominant shade source of every
+edge (arcade > linkway > tree > building) and the per-metre attribution of shade to its sources come from the 14:00
+shadow-category raster.
 
 ## 3. Scripts
 
@@ -42,14 +42,11 @@ than 20 m are dropped. Flow on an edge = sum of the demand of all OD pairs whose
 | 3 | `step4_4b_city_edge_shade.py` | per-edge shade fraction from the full-system 14:00 shadow raster (Module 1) and from the building-only raster, sampled every 2 m; edges through building footprints count as fully shaded; builds the node / edge graph (`u`, `v`) |
 | 3c | `step4_4b_city_edge_shade_hourly.py` | per-edge shade fraction for every hour 08-18 from the 24-band shadow raster (band = hour + 1; the same 2 m sampling and building-interior rule as 3, the 14:00 layer is checked against `shade_full`), `edge_shade_hourly_SG.npz`; feeds the Daily-time slider of the web app (network shade colouring, coolest routing and route cards follow the hour) |
 | 3b | `step4_4b_esn.py`, `step4_edge_facility.py`, `step4_edge_class_1m.py`, `step4_network_split_1m.py`, `edge_px_permetre.py` | no-facility shade per edge, dominant facility class per edge (arcade > linkway > tree > building), per-metre attribution of shade sources, split of the network by shade class |
-| 4 | `scripts/03_routing_flow/step4_4c_city_routing.py` | shortest and coolest (lambda = 0.15) routing for all station-building pairs, per-edge flows `flow_short`, `flow_cool`, metrics per building type |
-| 4b | `step4_4c_orig_flow.py`, `step4_4c_orig_coolflow.py` | the same on the original footpath-only network (`flow_orig`, `flow_cool_orig`) to separate the network effect from the behaviour effect |
-| 5 | `step4_4f_flow_lam.py` | flows for the lambda sweep (paper setting lambda = 0.2 included), summary of shade, detour and facility share per lambda |
-| 5b | `step4_4e_flow_detour.py` | tau-capped variant (tau = 1.0, 1.2, 1.5, 2.0) |
-| 6 | `step4_4d_city_viz.py` | city-wide maps of edge shade and flow |
 
-Runtime: edge shade about 10 min (two 44,000 x 27,000 rasters in memory as uint8); one lambda value of the
-city-wide routing about 1-2 h (one cut-off Dijkstra per station, 5,921 stations).
+The graph (`step4_4_edges_SG.gpkg`, `step4_4_nodes_SG.gpkg`) and the per-edge facility class (`edge_facility_SG.npy`)
+are the inputs of the routing / flow scripts of Module 4b.
+
+Runtime: edge shade about 10 min (two 44,000 x 27,000 rasters in memory as uint8).
 
 Verification of the released scripts (2026-09-10, updated 2026-09-17): `make_prep.py` and `step4_4b_city_edge_shade.py`
 were re-run on the published network (469,434 edges, 21 s + 91 s). The graph is identical to the production edge layer
@@ -57,30 +54,17 @@ were re-run on the published network (469,434 edges, 21 s + 91 s). The graph is 
 (`shade_bld`): the production layer of June had been sampled with the building-footprint mask of the previous arcade data
 set (the mask on disk had been updated together with the arcade shadows). On 2026-09-17 the production layer was regenerated
 with the released script and the rasters on disk; it is now identical, on every edge, to the corrected per-edge shade used by the
-paper chain, and the routing / flow products, the hourly edge shade and the web app were recomputed from it. On 2026-09-18 the five routing / flow scripts were changed to snap station exits and demand buildings to the main
-connected component of the network (see PROVENANCE.md), and the flow products and the web app were recomputed once more.
+paper chain, and the routing / flow products (Module 4b), the hourly edge shade and the web app were recomputed from it.
 
-## 4. Results (Singapore, 14:00, all trips)
-
-| Routing | mean length (m) | mean shade | detour | facility share of shaded metres |
-|---|---|---|---|---|
-| shortest | 428.3 | 0.348 | 1.000 | 0.166 |
-| coolest, lambda = 1.0 | 438.5 | 0.439 | 1.020 | 0.229 |
-| coolest, lambda = 0.2 (paper) | 474.3 | 0.518 | 1.093 | 0.286 |
-| coolest, lambda = 0.15 | 480.3 | 0.526 | 1.106 | 0.291 |
-| coolest, lambda = 0.001 | 528.5 | 0.574 | 1.217 | 0.321 |
-
-The per-edge products (`step4_4_edges_flow_SG.gpkg` with `shade_full`, `shade_bld`, `flow_short`, `flow_cool`,
-`flow_orig`; `flow_lam_<lambda>.npy`; `step4_4_od_metrics_SG.csv`) are distributed with the data repository.
-
-## 5. Web tool
+## 4. Web tool
 
 `webapp/` contains the generators of the ShadeWalk web tool (MapLibre GL single-file HTML with in-browser
-Dijkstra routing, hourly shade layers, facility layers, 3D view and pedestrian flow) and the English build of the
-paper version, `webapp/dist/nav_app_paper_en.html.gz` (gunzip to open in a browser). See `webapp/README.md`.
+Dijkstra routing on the edge cost above, hourly shade layers, facility layers, 3D view and the pedestrian flows of
+Module 4b) and the English build of the paper version, `webapp/dist/nav_app_paper_en.html.gz` (gunzip to open in a
+browser). See `webapp/README.md`.
 
-## 6. Path configuration
+## 5. Path configuration
 
-Inputs are defined by the constants at the top of each script (`OUT`, `BW`, `ST`, `FULL`, `BLD`, `BREM`, `CAT`,
-`NA`); they point to the Module 1 rasters, the Module 4b weight layers and the Module 5 network on the original
-workstation. Edit them before running.
+Inputs are defined by the constants at the top of each script (`OUT`, `FULL`, `BLD`, `BREM`, `CAT`, `NA`); they point
+to the Module 1 rasters and the Module 5 network on the original workstation. The web-tool generator also reads the
+flow products and the station / building tables of Module 4b. Edit the constants before running.

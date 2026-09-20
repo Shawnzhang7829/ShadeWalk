@@ -1,29 +1,20 @@
 """
-Patronage_Flow / Network.py    (v2 — madina-based)
+demand_inputs / loaders.py
 
-Step 1 of the pipeline.
+Readers of the demand inputs:
+  - load_pedestrian_highway : the pedestrian-passable subset of the OSM highway layer (Highway_OSM.gpkg), clipped to the island
+  - load_stations           : bus stops (BusStop.shp) and MRT / LRT exits (Train_Station_Exit_Layer.shp) as origin candidates
+  - load_ridership_split    : the LTA DataMall passenger volumes by node (tap-in or tap-out) as a per-day table indexed by PT_CODE
 
-Input layers come from three OSM-derived / official sources:
-  - Highway_OSM.gpkg            -- the pedestrian-passable subset of OSM highways
-  - BusStop.shp + RapidTransitSystemStation.shp + LTA ridership CSVs
-                                -- transit stations as ORIGINS (weighted by ridership)
-  - SG_Building_SVY21_TH.shp    -- building footprints as DESTINATIONS (weighted
-                                   by floor area as a proxy for attractiveness)
-
-The function `build_zonal()` assembles these into a `madina.Zonal` workspace
-with origins and destinations inserted onto the network -- ready for
-`madina.una.tools.betweenness()` to run.
+The functions are the loaders of the earlier `Patronage_Flow` package (Network.py, Flow_Computation.py), unchanged.
 """
 from __future__ import annotations
 import warnings
-from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 
-from madina.zonal import Zonal
-
-from Patronage_Flow import Constants as C
+from demand_inputs import Constants as C
 
 
 # ---------------------------------------------------------------------------
@@ -186,131 +177,43 @@ def load_stations(bbox=None) -> gpd.GeoDataFrame:
 
 
 # ---------------------------------------------------------------------------
-# buildings (destinations)
+# ridership (monthly sums -> per-day means, indexed by PT_CODE)
 # ---------------------------------------------------------------------------
-def load_buildings(bbox=None) -> gpd.GeoDataFrame:
-    """
-    Building polygons -> centroid points with archetype + GFA columns.
+def load_ridership_split(mode: str) -> pd.DataFrame:
+    """Per-day mean tap-in or tap-out volume of every station: DataFrame indexed by PT_CODE with
+    columns = MultiIndex(DAY_TYPE, HOUR).  `mode` is one of: 'tap_in', 'tap_out'."""
+    assert mode in ("tap_in", "tap_out"), f"unknown mode {mode!r}"
+    bus  = pd.read_csv(C.BUS_CSV, dtype={'PT_CODE': str})   # fix 2026-09-17: bus-stop codes keep their leading zero ('05013'); parsed as int they never joined the stop layer and the 225 central-area stops exported as 0
+    rail = pd.read_csv(C.TRAIN_CSV, dtype={'PT_CODE': str})
+    df = pd.concat([bus, rail], ignore_index=True)
+    df = df.dropna(subset=["TIME_PER_HOUR", "PT_CODE", "DAY_TYPE"])
+    df["PT_CODE"] = df["PT_CODE"].astype(str)
+    df["HOUR"]    = df["TIME_PER_HOUR"].astype(int)
 
-    v5 change: do NOT pre-compute a static destination weight W. Instead,
-    retain `gross_floor_area` and `building_archetype` so that the per-slot
-    weight = GFA * occupancy_density(archetype, day_type, hour) can be
-    written into Zonal node weights at run time.
+    # interchange codes "NS24/NE6/CC1" -> one row per line code,
+    # ridership divided equally so total is preserved.
+    has_slash = df["PT_CODE"].str.contains("/", na=False)
+    if has_slash.any():
+        split = df[has_slash].copy()
+        n_parts = split["PT_CODE"].str.count("/") + 1
+        split["TOTAL_TAP_IN_VOLUME"]  = split["TOTAL_TAP_IN_VOLUME"]  / n_parts
+        split["TOTAL_TAP_OUT_VOLUME"] = split["TOTAL_TAP_OUT_VOLUME"] / n_parts
+        split["PT_CODE"] = split["PT_CODE"].str.split("/")
+        split = split.explode("PT_CODE")
+        df = pd.concat([df[~has_slash], split], ignore_index=True)
 
-    bbox is interpreted in TARGET_CRS (EPSG:3414) for consistency with the
-    rest of the pipeline. The geojson is in EPSG:4326, so we convert the bbox
-    to lon/lat before reading and re-project the result.
-    """
-    print(f"[network] reading {C.BUILDING_GEOJSON.name} ...")
-    cols = [C.BUILDING_GFA_COL, C.BUILDING_ARCHETYPE_COL, "geometry"]
-    if bbox is not None:
-        from shapely.geometry import box
-        bb = tuple((gpd.GeoSeries([box(*bbox)], crs=C.TARGET_CRS)
-                       .to_crs("EPSG:4326").total_bounds).tolist())
+    if mode == "tap_in":
+        df["W"] = df["TOTAL_TAP_IN_VOLUME"]
     else:
-        bb = None
-    gdf = gpd.read_file(C.BUILDING_GEOJSON, bbox=bb, columns=cols).to_crs(C.TARGET_CRS)
+        df["W"] = df["TOTAL_TAP_OUT_VOLUME"]
 
-    gdf = gdf.dropna(subset=[C.BUILDING_GFA_COL])
-    gdf = gdf[gdf[C.BUILDING_GFA_COL] > 0]
-    gdf[C.BUILDING_ARCHETYPE_COL] = (gdf[C.BUILDING_ARCHETYPE_COL]
-                                       .fillna("__missing__").astype(str))
+    days = {"WEEKDAY": C.WEEKDAYS_PER_MONTH,
+            "WEEKENDS/HOLIDAY": C.WEEKEND_HOLIDAYS_PER_MONTH}
+    df["W"] = df["W"] / df["DAY_TYPE"].map(days)
 
-    gdf["geometry"] = gdf.geometry.centroid
-    # placeholder W -- madina's insert_node needs *some* weight column on
-    # the layer. Real per-slot weights are written in _set_destination_weights.
-    gdf["W"] = 1.0
-    keep = ["W", C.BUILDING_ARCHETYPE_COL, C.BUILDING_GFA_COL, "geometry"]
-    gdf = gdf[keep].reset_index(drop=True)
-    gdf = gdf.set_crs(C.TARGET_CRS, allow_override=True)
-    print(f"[network] buildings (GFA > 0): {len(gdf):,}  "
-          f"total GFA = {gdf[C.BUILDING_GFA_COL].sum()/1e6:.1f}M m^2")
-
-    # archetype-share summary (by raw GFA only -- no static multiplier in v5)
-    by_arch = (gdf.groupby(C.BUILDING_ARCHETYPE_COL)
-                  .agg(n=("W", "size"),
-                       gfa_sum=(C.BUILDING_GFA_COL, "sum"))
-                  .sort_values("gfa_sum", ascending=False))
-    by_arch["gfa_pct"] = (by_arch["gfa_sum"] / by_arch["gfa_sum"].sum() * 100).round(1)
-    print(f"[network]   archetype GFA distribution (top 8):")
-    print(by_arch.head(8).to_string())
-    return gdf
-
-
-# ---------------------------------------------------------------------------
-# build the madina Zonal workspace
-# ---------------------------------------------------------------------------
-def build_zonal(highway_gdf: gpd.GeoDataFrame,
-                stations_gdf: gpd.GeoDataFrame,
-                buildings_gdf: gpd.GeoDataFrame) -> Zonal:
-    """
-    Assemble a madina Zonal:
-      1. street network from highway_gdf
-      2. origins = stations (with placeholder weight 'W_init', overwritten later)
-      3. destinations = buildings (weight = floor area)
-      4. internal NetworkX graph
-    """
-    z = Zonal()
-    z.load_layer("streets", highway_gdf)
-    z.create_street_network(
-        source_layer="streets",
-        node_snapping_tolerance=C.NODE_SNAPPING_TOLERANCE_M,
-        redundant_edge_treatment=C.REDUNDANT_EDGE_TREATMENT,
-        turn_threshold_degree=C.TURN_THRESHOLD_DEG,
-        turn_penalty_amount=C.TURN_PENALTY_M,
-    )
-    print(f"[network] madina graph: "
-          f"{len(z.network.nodes):,} nodes  "
-          f"{len(z.network.edges):,} edges")
-
-    z.load_layer("stations", stations_gdf)
-    z.insert_node("stations", label="origin", weight_attribute="W_init")
-
-    z.load_layer("buildings", buildings_gdf)
-    z.insert_node("buildings", label="destination", weight_attribute="W")
-
-    z.create_graph(light_graph=True, d_graph=True)
-
-    counts = z.network.nodes["type"].value_counts().to_dict()
-    print(f"[network] node types: {counts}")
-    return z
-
-
-def build_zonal_reverse(highway_gdf: gpd.GeoDataFrame,
-                        stations_gdf: gpd.GeoDataFrame,
-                        buildings_gdf: gpd.GeoDataFrame) -> Zonal:
-    """
-    Reverse-direction Zonal for true dual-pass (Pass B):
-      origins = buildings (weight = GFA * occupancy at slot)
-      destinations = stations (weight = tap_in at slot, divided by exits)
-
-    Models pre-boarding walks: people walking FROM buildings TO transit stations
-    to begin a ride. Combined with normal Zonal (Pass A: post-alighting walks
-    FROM stations TO buildings), gives the full bi-directional walking flow.
-    """
-    z = Zonal()
-    z.load_layer("streets", highway_gdf)
-    z.create_street_network(
-        source_layer="streets",
-        node_snapping_tolerance=C.NODE_SNAPPING_TOLERANCE_M,
-        redundant_edge_treatment=C.REDUNDANT_EDGE_TREATMENT,
-        turn_threshold_degree=C.TURN_THRESHOLD_DEG,
-        turn_penalty_amount=C.TURN_PENALTY_M,
-    )
-    print(f"[network] reverse madina graph: "
-          f"{len(z.network.nodes):,} nodes  "
-          f"{len(z.network.edges):,} edges")
-
-    # buildings -> origin (in reverse direction)
-    z.load_layer("buildings", buildings_gdf)
-    z.insert_node("buildings", label="origin", weight_attribute="W")
-
-    # stations -> destination (in reverse direction)
-    z.load_layer("stations", stations_gdf)
-    z.insert_node("stations", label="destination", weight_attribute="W_init")
-
-    z.create_graph(light_graph=True, d_graph=True)
-
-    counts = z.network.nodes["type"].value_counts().to_dict()
-    print(f"[network] reverse node types: {counts}")
-    return z
+    wide = (df.groupby(["PT_CODE", "DAY_TYPE", "HOUR"])["W"].sum()
+              .unstack(["DAY_TYPE", "HOUR"])
+              .fillna(0.0))
+    print(f"[flow] ridership table ({mode}): {wide.shape[0]:,} stations x "
+          f"{wide.shape[1]} bins")
+    return wide

@@ -5,32 +5,32 @@ For each building b and slot s = (day type, hour): weight_b(s) = GFA_b x occupan
 area GFA_b = `gfa_corr` of the released building dataset (data record, 5_base_data/SG_buildings_footprint_height_function.shp:
 storeys x footprint), joined on the OSM id, and the occupancy-density table lookup/occupancy_density.parquet (people per m2 by
 archetype and slot, see build_occupancy_table.py).  Geometry, row order and archetypes come from the building file of
-Constants.BUILDING_GEOJSON (reprojected to EPSG:3414); the column layout is that of export_building_hourly.py.
+Constants.BUILDING_GEOJSON (reprojected to EPSG:3414).
 
 Inputs (Constants.ROOT): building/sg_buildings_v5.geojson (id, gross_floor_area, building_archetype, geometry);
         5_base_data/SG_buildings_footprint_height_function/SG_buildings_footprint_height_function.shp (id, gfa_orig, gfa_corr);
-        Patronage_Flow/lookup/occupancy_density.parquet.
+        demand_inputs/lookup/occupancy_density.parquet.
 Output: output/building_hourly_weight_gfa.gpkg (+ _report.csv: buildings, gross floor area and 14:00 weight per archetype)
   geometry              : building footprint POLYGON (SVY21)
   building_archetype    : 21 archetypes
   gross_floor_area      : GFA (m2) = gfa_corr
   weight_<daytype>_<HH> : 48 columns of weight_b(slot) (people-equivalent)
   weight_weekday_peak / _total / _peak_hour, weight_weekends_peak : convenience columns
-Run:    python tools/building_weights.py [--out PATH] [--overwrite]
+Run:    python demand_inputs/building_weights.py [--out PATH] [--overwrite]
 """
 from __future__ import annotations
 import argparse, os, sys, time
 import numpy as np, pandas as pd, geopandas as gpd, pyogrio
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # module root (Patronage_Flow package)
-from Patronage_Flow import Constants as C
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # module root (demand_inputs package)
+from demand_inputs import Constants as C
 
 ap = argparse.ArgumentParser(description="hourly building weights, GFA = gfa_corr of the released building dataset")
 ap.add_argument("--out", default=str(C.OUTPUT_DIR / "building_hourly_weight_gfa.gpkg"))
 ap.add_argument("--overwrite", action="store_true")
 args = ap.parse_args()
 T0 = time.time()
-ZEN = C.ROOT / "5_base_data" / "SG_buildings_footprint_height_function" / "SG_buildings_footprint_height_function.shp"
+ZEN = C.BUILDING_RELEASED_SHP
 OUT = args.out; GFA, ARCH = C.BUILDING_GFA_COL, C.BUILDING_ARCHETYPE_COL
 assert args.overwrite or not os.path.exists(OUT), f"{OUT} exists (pass --overwrite or --out)"
 
@@ -45,7 +45,7 @@ gfa = m["gfa_corr"].astype(np.float64).values; assert (gfa > 0).all()
 print(f"join on id: {len(m):,} buildings | gross floor area (gfa_corr) {gfa.sum()/1e6:.2f} M m2", flush=True)
 occ = pd.read_parquet(C.OCCUPANCY_DENSITY_PARQUET); archetypes = gdf[ARCH].values
 
-# weight_<daytype>_<HH> = GFA x density(archetype, slot) in float32 (the arithmetic of export_building_hourly.py)
+# weight_<daytype>_<HH> = GFA x density(archetype, slot) in float32
 W = {}; wd, we = [], []; gf = gfa.astype(np.float32)
 for (daytype, hour) in occ.columns:
     tag = f"{daytype.split('/')[0].lower()}_{hour:02d}"

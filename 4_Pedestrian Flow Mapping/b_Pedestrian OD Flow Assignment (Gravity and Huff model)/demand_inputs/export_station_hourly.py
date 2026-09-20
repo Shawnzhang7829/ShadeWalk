@@ -3,7 +3,7 @@ Export per-station hourly ridership snapshots for QA / verification.
 
 Outputs tap_in, tap_out, and total (tap_in + tap_out) separately per slot.
 
-Output: Patronage_Flow/output/station_hourly_ridership.gpkg
+Output: output/station_hourly_ridership.gpkg
   geometry          : station / MRT-exit point (SVY21)
   PT_CODE           : station code
   source            : BUS / MRT
@@ -12,7 +12,6 @@ Output: Patronage_Flow/output/station_hourly_ridership.gpkg
   out_<daytype>_<HH>: raw tap_out
   tot_<daytype>_<HH>: tap_in + tap_out
   inj_<daytype>_<HH>: injected weight per exit = tot / n_exits
-                      (what madina "both" mode actually uses)
 
   in_weekday_total  : sum of tap_in across all weekday hours
   out_weekday_total : sum of tap_out across all weekday hours
@@ -21,7 +20,7 @@ Output: Patronage_Flow/output/station_hourly_ridership.gpkg
 Also writes station_hourly_summary.gpkg (one row per PT_CODE).
 
 Run:
-    python -m Patronage_Flow.export_station_hourly
+    python -m demand_inputs.export_station_hourly      (from the folder that contains demand_inputs/)
 """
 from __future__ import annotations
 import warnings
@@ -31,9 +30,8 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 
-from Patronage_Flow import Constants as C
-from Patronage_Flow.Network import load_stations
-from Patronage_Flow.Flow_Computation import load_ridership_split
+from demand_inputs import Constants as C
+from demand_inputs.loaders import load_stations, load_ridership_split
 
 
 def main():
@@ -76,7 +74,7 @@ def main():
         out[f"in_{slot_tag}"]  = raw_in
         out[f"out_{slot_tag}"] = raw_out
         out[f"tot_{slot_tag}"] = raw_tot
-        # injected weight per exit = what madina "both" mode uses
+        # injected weight per exit
         out[f"inj_{slot_tag}"] = (raw_tot /
                                    out["n_exits"].astype(np.float32).values
                                    ).astype(np.float32)

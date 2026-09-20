@@ -64,16 +64,6 @@ references:
     volume: 11
     issue: 118
     doi: "10.21105/joss.09535"
-  - type: article
-    title: "Madina Python Package: Scalable Urban Network Analysis for Modeling Pedestrian and Bicycle Trips in Cities"
-    authors:
-      - family-names: Alhassan
-        given-names: Abdulaziz
-      - family-names: Sevtsuk
-        given-names: Andres
-    journal: "SSRN"
-    year: 2024
-    doi: "10.2139/ssrn.4748255"
   - type: data
     title: "ShadeWalk data release: shadow-model rasters, covered-linkway training tiles, transit and building layers for Singapore"
     authors:
