@@ -18,6 +18,7 @@ geo = e.geometry.values
 ln = e.geometry.length.values
 n = len(e)
 ds = rasterio.open(CAT); cat = ds.read(1); inv = ~ds.transform
+DSM = r"D:\Claude\SVI_FFW\TIF_shadow_newarcade\SUB_SG_Polygon_DSMremain_1m.tif"; dsm_ds = rasterio.open(DSM)   # water rule: Category class 7 on open water (DSMremain <= 0) is no linkway -> sun (sampled per point, the raster is not loaded)
 H, W = cat.shape
 print(f"edges {n:,} | raster {cat.shape} | {time.time()-t0:.0f}s", flush=True)
 npts = np.maximum(1, np.ceil(ln).astype(int))
@@ -30,6 +31,8 @@ cols = np.round(inv.a * xs + inv.b * ys + inv.c).astype(np.int64)
 rows = np.round(inv.d * xs + inv.e * ys + inv.f).astype(np.int64)
 ok = (rows >= 0) & (rows < H) & (cols >= 0) & (cols < W)
 cv = np.zeros(len(dist), np.uint8); cv[ok] = cat[rows[ok], cols[ok]]
+sel = np.nonzero(ok & (cv == 7))[0]                    # class-7 samples on open water (DSMremain <= 0) -> sun before the class mapping (water artefact of the Category raster, Fig. 3 v47 basis)
+if len(sel): dsmv = np.array([v[0] for v in dsm_ds.sample(np.column_stack([xs[sel], ys[sel]]).tolist())]); cv[sel[dsmv <= 0]] = 0
 fac = np.zeros(len(dist), np.uint8)
 fac[np.isin(cv, [8, 9, 10, 11])] = 3
 m = (fac == 0) & np.isin(cv, [4, 5, 6, 7]); fac[m] = 4

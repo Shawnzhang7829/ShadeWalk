@@ -20,6 +20,7 @@ print(f"edges {n} | {time.time()-t0:.0f}s", flush=True)
 
 ds = rasterio.open(CAT); cat = ds.read(1); inv = ~ds.transform
 bds = rasterio.open(BREM); brem = bds.read(1); binv = ~bds.transform
+DSM = r"D:\Claude\SVI_FFW\TIF_shadow_newarcade\SUB_SG_Polygon_DSMremain_1m.tif"; dsm_ds = rasterio.open(DSM)   # water rule: Category class 7 on open water (DSMremain <= 0) is no linkway -> sun (sampled per point, the raster is not loaded)
 H, W = cat.shape
 print(f"rasters loaded | {time.time()-t0:.0f}s", flush=True)
 
@@ -39,6 +40,8 @@ def flush_batch():
     rows = np.round(inv.d*xs + inv.e*ys + inv.f).astype(np.int64)
     ok = (rows >= 0) & (rows < H) & (cols >= 0) & (cols < W)
     cv = np.zeros(len(xs), np.uint8); cv[ok] = cat[rows[ok], cols[ok]]
+    sel = np.nonzero(ok & (cv == 7))[0]                    # class-7 samples on open water (DSMremain <= 0) -> sun before the class mapping (water artefact of the Category raster, Fig. 3 v47 basis)
+    if len(sel): dsmv = np.array([v[0] for v in dsm_ds.sample(np.column_stack([xs[sel], ys[sel]]).tolist())]); cv[sel[dsmv <= 0]] = 0
     bv = np.zeros(len(xs), bool); bv[ok] = brem[rows[ok], cols[ok]] > 0
     outdoor = ~bv
     sh = outdoor & (cv >= 1) & (cv <= 11)
