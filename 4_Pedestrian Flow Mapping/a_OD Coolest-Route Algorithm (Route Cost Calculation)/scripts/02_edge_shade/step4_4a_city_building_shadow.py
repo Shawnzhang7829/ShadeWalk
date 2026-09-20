@@ -6,7 +6,7 @@ from rasterio.windows import Window, from_bounds
 sys.path.insert(0, r'D:\Claude\SVI_FFW\Module\SOLWEIG-GPU')
 from solweig_gpu.sun_position import sun_position
 from pyproj import Transformer
-TIF=r"D:\Claude\SVI_FFW\TIF"; DSMF=f"{TIF}\\SUB_SG_Polygon_DSMremain_1m.tif"
+TIF=r"D:\Claude\SVI_FFW\TIF_shadow_newarcade"; DSMF=f"{TIF}\\SUB_SG_Polygon_DSMremain_1m.tif"
 SHF=f"{TIF}\\merge_images\\Shadow_2pm_h14.tif"
 OUT=r"D:\Claude\SVI_FFW\output\step5_nav_webapp"
 OUTF=f"{OUT}\\SUB_SG_BUILDING_SHADOW_h14_1m.tif"

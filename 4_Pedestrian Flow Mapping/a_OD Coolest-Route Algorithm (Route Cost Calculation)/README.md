@@ -41,7 +41,7 @@ shadow-category raster.
 | 2b | `step4_4a_bldtree_shadow.py` | buildings + trees baseline (no facilities), vegetation as a separate opaque canopy |
 | 3 | `step4_4b_city_edge_shade.py` | per-edge shade fraction from the full-system 14:00 shadow raster (Module 1) and from the building-only raster, sampled every 2 m; edges through building footprints count as fully shaded; builds the node / edge graph (`u`, `v`) |
 | 3c | `step4_4b_city_edge_shade_hourly.py` | per-edge shade fraction for every hour 08-18 from the 24-band shadow raster (band = hour + 1; the same 2 m sampling and building-interior rule as 3, the 14:00 layer is checked against `shade_full`), `edge_shade_hourly_SG.npz`; feeds the Daily-time slider of the web app (network shade colouring, coolest routing and route cards follow the hour) |
-| 3b | `step4_4b_esn.py`, `step4_edge_facility.py`, `step4_edge_class_1m.py`, `step4_network_split_1m.py`, `edge_px_permetre.py` | no-facility shade per edge, dominant facility class per edge (arcade > linkway > tree > building), per-metre attribution of shade sources, split of the network by shade class |
+| 3b | `step4_4b_esn.py`, `step4_edge_facility.py`, `step4_edge_class_1m.py`, `step4_network_split_1m.py`, `edge_px_permetre.py` | no-facility shade per edge, dominant facility class per edge (arcade > linkway > tree > building; Category class 7 on open water is treated as sun), per-metre attribution of shade sources, split of the network by shade class |
 
 The graph (`step4_4_edges_SG.gpkg`, `step4_4_nodes_SG.gpkg`) and the per-edge facility class (`edge_facility_SG.npy`)
 are the inputs of the routing / flow scripts of Module 4b.
@@ -55,6 +55,15 @@ were re-run on the published network (469,434 edges, 21 s + 91 s). The graph is 
 set (the mask on disk had been updated together with the arcade shadows). On 2026-09-17 the production layer was regenerated
 with the released script and the rasters on disk; it is now identical, on every edge, to the corrected per-edge shade used by the
 paper chain, and the routing / flow products (Module 4b), the hourly edge shade and the web app were recomputed from it.
+
+End-to-end run of the released Module 4 chain (2026-09-21, scratch folder, original workstation): `make_prep.py` ->
+`step4_4b_city_edge_shade.py` -> Module 4b routing / flows -> `step4_edge_facility.py` -> `step4_4e_flow_detour.py`,
+`step4_4f_flow_lam.py`, `step4_4c_orig_coolflow.py` -> `step4_4d_city_viz.py`. The graph, the edge shade and every flow
+product (`flow_short`, `flow_cool`, `flow_orig`, `flow_cool_orig`, the 4 tau and 18 lambda arrays, the OD metrics) came out
+identical to the products in use. `step4_edge_facility.py` now carries the water rule of the facility labels (Category
+class 7 on open water, DSMremain <= 0, is no linkway; PROVENANCE.md) and reproduces the label file in use on all but 5 of
+426,163 edges (those 5 fall inside the current building-footprint mask). `step4_4a_city_building_shadow.py` was run on the
+current raster folder: 0.014 % of the pixels differ from the June baseline (shaded area -0.11 %), so the baseline in use was kept.
 
 ## 4. Web tool
 

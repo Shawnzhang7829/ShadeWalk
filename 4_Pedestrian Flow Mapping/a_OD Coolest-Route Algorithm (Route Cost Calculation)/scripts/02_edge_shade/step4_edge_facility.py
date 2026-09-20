@@ -15,6 +15,7 @@ except Exception: e=e.set_crs(3414,allow_override=True)
 n=len(e); print(f"edges {n} | {time.time()-t0:.0f}s",flush=True)
 ds=rasterio.open(CAT); cat=ds.read(1); inv=~ds.transform   # the new Category is already a single 14:00 frame
 bds=rasterio.open(BREM); brem=bds.read(1); binv=~bds.transform   # building_remain mask (0/1)
+DSM=r"D:\Claude\SVI_FFW\TIF_shadow_newarcade\SUB_SG_Polygon_DSMremain_1m.tif"; dsm_ds=rasterio.open(DSM)   # water artefact of the Category raster: class 7 on open water (DSMremain <= 0) is no linkway (sampled per point, the raster is not loaded)
 print(f"category raster band15 loaded {cat.shape} {cat.dtype} | {time.time()-t0:.0f}s",flush=True)
 def cat2fac(c):  # pixel class -> facility major class (priority arcade > linkway > tree > building)
     f=np.zeros(c.shape,np.uint8)
@@ -31,6 +32,8 @@ for j,tt in enumerate(SAMP):
     pts=e.geometry.interpolate(tt,normalized=True); xs=pts.x.values; ys=pts.y.values
     cols=np.round(inv.a*xs+inv.b*ys+inv.c).astype(int); rows=np.round(inv.d*xs+inv.e*ys+inv.f).astype(int)
     ok=(rows>=0)&(rows<H)&(cols>=0)&(cols<W); cv=np.zeros(n,np.uint8); cv[ok]=cat[rows[ok],cols[ok]]
+    sel=np.nonzero(ok&(cv==7))[0]                       # class-7 samples on open water (DSMremain <= 0) -> sun before the class mapping (water artefact, Fig. 3 v47 basis)
+    if len(sel): dsmv=np.array([v[0] for v in dsm_ds.sample(np.column_stack([xs[sel],ys[sel]]).tolist())]); cv[sel[dsmv<=0]]=0
     allf[:,j]=cat2fac(cv)
     ah=atree.query(pts.values,predicate='intersects'); arc_hit[ah[0]]=True   # sample point inside an arcade polygon (buffer) -> covered by the arcade vector
     bcols=np.round(binv.a*xs+binv.b*ys+binv.c).astype(int); brows=np.round(binv.d*xs+binv.e*ys+binv.f).astype(int)

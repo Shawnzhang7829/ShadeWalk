@@ -82,7 +82,11 @@ re-run with the repository package and compared with the products in use: `pedes
 (142,095 segments, identical geometry and length), `station_hourly_ridership_v4.gpkg` (5,758 records, every value
 identical; only the row order differs) and `building_hourly_weight_gfa.gpkg` (118,782 buildings, 55 columns identical)
 are reproduced, and `occupancy_density.parquet` is reproduced from the IDF files (21 x 48 values, max difference 0). The routing / flow scripts are the scripts that produced the flow products of the paper (main-component
-snapping, station table v4, weights on `gfa_corr`), moved here from Module 4a (code unchanged; two comment lines name the tools of this module).
+snapping, station table v4, weights on `gfa_corr`), moved here from Module 4a (code unchanged; two comment lines name the tools of this module). End-to-end run of the released chain (2026-09-21, scratch folder, original workstation; Module 4a graph and edge
+shade -> `step4_4c_city_routing.py` -> `step4_4c_orig_flow.py` -> `step4_4c_orig_coolflow.py`, `step4_4e_flow_detour.py`
+(3 station subsets + merge), `step4_4f_flow_lam.py` (18 lambda values, 25 min) -> `step4_4d_city_viz.py`): `flow_short`,
+`flow_cool`, `flow_orig`, `flow_cool_orig`, the 4 tau and 18 lambda arrays and the OD metrics are identical, on every edge, to
+the products in use.
 
 ## 4. Results (Singapore, 14:00, all trips; `step4_4f_flow_lam_summary.csv` of 2026-09-21)
 
