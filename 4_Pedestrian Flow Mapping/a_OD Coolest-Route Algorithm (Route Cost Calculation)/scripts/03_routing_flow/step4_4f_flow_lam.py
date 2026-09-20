@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Building weights: building_hourly_weight_gfacorr.gpkg (Module 4b tools/building_weights_corrected_gfa.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
+# Building weights: building_hourly_weight.gpkg (Module 4b tools/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
 # 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """Paper basis (fixed lambda) city-wide flow assignment: coolest = min omega = sum of length x ((1 - sigma) + lambda), no detour cap.
 OD demand exactly mirrors step4_4c/4e (station 14:00 ridership x building weight x exp(-d/350), MRT 800 m / BUS 400 m, SNAP 120 m, Ls<20 dropped).
@@ -11,7 +11,7 @@ For each lambda one single-source Dijkstra per station (cost = len x ((1 - sigma
 import numpy as np, geopandas as gpd, pandas as pd, time, collections, heapq
 from scipy.spatial import cKDTree
 OUT=r"D:\Claude\SVI_FFW\output\step5_nav_webapp"
-BW=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight_gfacorr.gpkg"
+BW=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight.gpkg"
 ST=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\station_hourly_ridership_v4.gpkg"   # station table v4 (2026-09-17)
 BETA=350.0; SNAP_MAX=120.0; D_MRT=800.0; D_BUS=400.0
 LAMS_ALL=[3.0,1.5,1.0,0.7,0.5,0.35,0.25,0.2,0.18,0.15,0.12,0.09,0.06,0.04,0.02,0.01,0.005,0.001]  # main-text sweep 16 levels + paper calibration 0.2 + limit 0.001 = 18 levels

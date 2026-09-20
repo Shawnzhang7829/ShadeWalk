@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Building weights: building_hourly_weight_gfacorr.gpkg (Module 4b tools/building_weights_corrected_gfa.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
+# Building weights: building_hourly_weight.gpkg (Module 4b tools/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
 """MapLibre GL build of the heat-avoidance navigation app (GPU true vectors, crisp at any zoom).
 True network polylines (binned by shade fraction / pedestrian flow into a few MultiLineStrings) + arcade / covered linkway / building footprint vector polygons + tree / shadow / class raster layers
 + OneMap/OSM tile basemap + JS Dijkstra live routing. Coordinates are 3857-relative (JS converts back to lng/lat); data is inlined so the page opens by double-click. pyenv."""
@@ -143,7 +143,7 @@ ctr=gbp.geometry.centroid; bmx,bmy=to_m(ctr.x.values,ctr.y.values)
 BCX=np.round(bmx-ox).astype(int); BCY=np.round(bmy-oy).astype(int)
 print(f"骑楼环{len(arcR)} 连廊环{len(lkwR)} 建筑环{len(bldR)} 建筑中心{len(BCX)} | {time.time()-t0:.0f}s",flush=True)
 # HDB void decks: approximated by HDB building footprints (building_hourly_weight archetype='hdb', same source as the pedestrian flow / POI data)
-_bw4=gpd.read_file(r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight_gfacorr.gpkg")
+_bw4=gpd.read_file(r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight.gpkg")
 hdbR=rings_g(_bw4[_bw4['building_archetype']=='hdb'],2.0)
 print(f"HDB 架空层环{len(hdbR)} | {time.time()-t0:.0f}s",flush=True); del _bw4
 # === real tree points of the focus area (1 km around Detour_demo): full set for the 3D aerial / pedestrian views (no thinning) ===
