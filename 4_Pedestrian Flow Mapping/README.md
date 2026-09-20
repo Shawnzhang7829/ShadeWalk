@@ -8,5 +8,5 @@ Two complementary flow models run on the reconstructed pedestrian network of Mod
 | b | `b_Pedestrian OD Flow Assignment (Gravity and Huff model)/` | How is the hourly transit ridership (bus stops, MRT / LRT exits) distributed over the footpath network towards buildings weighted by floor area and hourly occupancy? | madina *patronage betweenness*: Huff-style destination competition with an exponential distance decay, 400 m bus / 800 m rail catchments, dual-pass ingress + egress |
 
 Part b produces the station ridership layer (`station_hourly_ridership_v4.gpkg`: one record per real MRT / LRT exit point or bus stop, an interchange counted once) and the hourly building weights
-(`building_hourly_weight_gfacorr.gpkg`, on the corrected gross floor area) that part a uses as origin and destination weights, and the OSM pedestrian subset
+(`building_hourly_weight_gfacorr.gpkg`; gross floor area = `gfa_corr` of the released building dataset) that part a uses as origin and destination weights, and the OSM pedestrian subset
 (`pedestrian_network_filtered.gpkg`) used by Modules 2 and 5. Each part has its own README and `INPUT_DATA.md`.

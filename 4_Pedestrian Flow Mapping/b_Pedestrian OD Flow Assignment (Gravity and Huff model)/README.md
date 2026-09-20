@@ -44,7 +44,7 @@ Occupancy density per archetype and hour comes from the 20 Singapore EnergyPlus 
 | `Patronage_Flow/run_2025_quarterly.py`, `run_2025_annual_total.py` | seasonal snapshots (March / June / September / December 2025, 12:00 and 14:00) and the 12-month annual total (betweenness is linear in the origin weights, so the monthly sums are run once) |
 | `Patronage_Flow/build_occupancy_table.py` | EnergyPlus IDF parser -> occupancy density table |
 | `Patronage_Flow/export_building_hourly.py`, `export_station_hourly.py` | QA exports: `building_hourly_weight.gpkg`, `station_hourly_ridership.gpkg` (rows = MRT / LRT exits x line codes, bus stops) |
-| `tools/building_weights_corrected_gfa.py` | `building_hourly_weight_gfacorr.gpkg`: the weight table on the corrected gross floor area (`gfa_corr` = resolved storeys x footprint of the released building dataset, joined on the OSM id; the shipped `gross_floor_area` carries the footprint area for 74.3 % of the buildings). The table Module 4a reads since 2026-09-21; self-checks that the shipped GFA reproduces the export |
+| `tools/building_weights_corrected_gfa.py` | `building_hourly_weight_gfacorr.gpkg`: the weight table with the gross floor area taken from `gfa_corr` of the released building dataset (`SG_buildings_footprint_height_function.shp`, joined on the OSM id); the table Module 4a reads |
 | `tools/station_table_real_exits.py` | station table v4 = the export collapsed to one record per REAL exit point / bus stop, values rebuilt from the raw LTA month files (an interchange is one station, `inj_* = station total / real exit points`); this is the origin-weight table of Module 4a (`station_hourly_ridership_v4.gpkg`) |
 | `Patronage_Flow/lookup/` | `mrt_code_to_name.csv`, `occupancy_density.csv` / `.parquet` |
 | `notebooks/Patronage_Flow_Pipeline.ipynb` | step-by-step notebook (smoke bounding box first, then full island) |
@@ -91,7 +91,7 @@ processes), which is why every runner keeps its `if __name__ == "__main__":` gua
 | `output/flow_weekday_HH.gpkg` | per-slot pedestrian flow (`betweenness`, `flow`) - main deliverable |
 | `output/flow_long.parquet` | long table `edge_id x DAY_TYPE x HOUR -> flow` |
 | `output/2025_MM/`, `2025_annual/`, `2025_total/` | seasonal snapshots, four-quarter mean and true annual total |
-| `output/building_hourly_weight.gpkg`, `building_hourly_weight_gfacorr.gpkg`, `station_hourly_ridership.gpkg`, `station_hourly_ridership_v4.gpkg` | hourly destination weights (shipped GFA / corrected GFA) and station ridership; the `_gfacorr` table and the v4 station table (one record per real exit point) are the ones Module 4a uses |
+| `output/building_hourly_weight.gpkg`, `building_hourly_weight_gfacorr.gpkg`, `station_hourly_ridership.gpkg`, `station_hourly_ridership_v4.gpkg` | hourly destination weights (the `_gfacorr` table: gross floor area = `gfa_corr` of the released building dataset) and station ridership; the `_gfacorr` table and the v4 station table (one record per real exit point) are the ones Module 4a uses |
 
 ## 5. Path configuration
 
