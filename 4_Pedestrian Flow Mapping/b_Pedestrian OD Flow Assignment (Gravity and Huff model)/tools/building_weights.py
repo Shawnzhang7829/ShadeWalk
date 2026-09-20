@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""building_hourly_weight.gpkg: the hourly building-weight table of the demand model (the destination weights Module 4a reads).
+"""building_hourly_weight_gfa.gpkg: the hourly building-weight table of the demand model (the destination weights Module 4a reads).
 
 For each building b and slot s = (day type, hour): weight_b(s) = GFA_b x occupancy_density(archetype_b, s), with the gross floor
 area GFA_b = `gfa_corr` of the released building dataset (data record, 5_base_data/SG_buildings_footprint_height_function.shp:
@@ -10,7 +10,7 @@ Constants.BUILDING_GEOJSON (reprojected to EPSG:3414); the column layout is that
 Inputs (Constants.ROOT): building/sg_buildings_v5.geojson (id, gross_floor_area, building_archetype, geometry);
         5_base_data/SG_buildings_footprint_height_function/SG_buildings_footprint_height_function.shp (id, gfa_orig, gfa_corr);
         Patronage_Flow/lookup/occupancy_density.parquet.
-Output: output/building_hourly_weight.gpkg (+ _report.csv: buildings, gross floor area and 14:00 weight per archetype)
+Output: output/building_hourly_weight_gfa.gpkg (+ _report.csv: buildings, gross floor area and 14:00 weight per archetype)
   geometry              : building footprint POLYGON (SVY21)
   building_archetype    : 21 archetypes
   gross_floor_area      : GFA (m2) = gfa_corr
@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from Patronage_Flow import Constants as C
 
 ap = argparse.ArgumentParser(description="hourly building weights, GFA = gfa_corr of the released building dataset")
-ap.add_argument("--out", default=str(C.OUTPUT_DIR / "building_hourly_weight.gpkg"))
+ap.add_argument("--out", default=str(C.OUTPUT_DIR / "building_hourly_weight_gfa.gpkg"))
 ap.add_argument("--overwrite", action="store_true")
 args = ap.parse_args()
 T0 = time.time()

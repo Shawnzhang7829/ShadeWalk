@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Building weights: building_hourly_weight.gpkg (Module 4b tools/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
+# Building weights: building_hourly_weight_gfa.gpkg (Module 4b tools/building_weights.py; gross floor area = gfa_corr of the released building dataset SG_buildings_footprint_height_function.shp).
 # 2026-09-18 main-component snapping: station exits and demand buildings snap to the nearest node (<= 120 m) of the MAIN connected component of the graph built below, not to the nearest node of any component (91 exits whose nearest node lay on a 2-25-node isolated fragment could not reach any building and were never routed; 17,340 boarding persons at 14:00, 2.7 %).
 """On the ORIGINAL network (footpath only, src=footpath, no shade-facility shortcuts) recompute the per-edge flow flow_orig on the same basis,
 for the nav_app flow mode "original only" comparison of the flow distribution before/after the modification. Method as in step4_4c (station ridership distributed by surrounding building weight x distance decay,
@@ -8,7 +8,7 @@ import numpy as np, geopandas as gpd, time, collections
 from scipy.spatial import cKDTree
 import networkx as nx
 OUT=r"D:\Claude\SVI_FFW\output\step5_nav_webapp"
-BW=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight.gpkg"
+BW=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\building_hourly_weight_gfa.gpkg"
 ST=r"D:\Claude\SVI_FFW\Shp\SG\POI+station\station_hourly_ridership_v4.gpkg"   # station table v4 (2026-09-17)
 BETA=350.0; SNAP_MAX=120.0; D_MRT=800.0; D_BUS=400.0; t0=time.time()
 edges=gpd.read_file(f"{OUT}\\step4_4_edges_flow_SG.gpkg")
