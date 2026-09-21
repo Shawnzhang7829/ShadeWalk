@@ -118,6 +118,7 @@ latest version; each release also has its own version DOI:
 | 1.0.3 (2026-09-16) | `v1.0.3` | [10.5281/zenodo.22796965](https://doi.org/10.5281/zenodo.22796965) | Module 4 fix: per-exit station weights (`inj_*`) in the routing / flow scripts and the web-tool generator, duplicate bus-stop codes share their volume; meteorological forcing files removed (not redistributed); data-sources table; updated workflow figure |
 | 1.0.4 (2026-09-17) | `v1.0.4` | [10.5281/zenodo.22809036](https://doi.org/10.5281/zenodo.22809036) | Module 4 fix: station table v4 (one record per real exit point, interchanges counted once), bus-stop codes read as strings (225 central-area stops restored), routing / flow scripts and web tool on the v4 table, Coolest / Shortest flow tabs |
 | 1.0.5 (2026-09-19) | `v1.0.5` | [10.5281/zenodo.22842122](https://doi.org/10.5281/zenodo.22842122) | Module 4a: station exits and demand buildings snap to the main connected component of the network; production edge shade regenerated with the current building-footprint mask; web tool: hourly network shade and routing (Daily time slider), Shade sigma_e button; meteorological forcing files documented as part of the figshare record |
+| 1.0.6 (2026-09-21) | `v1.0.6` | assigned by Zenodo when the GitHub release is published (see the Zenodo record) | Module 4 restructured: demand inputs and the OD flow assignment in 4b (`demand_inputs/`, `routing_flow/`), madina package removed; building weights on the corrected gross floor area (`gfa_corr`); water rule in the facility-label and 1-m Category-sampling scripts; end-to-end verification of the released Module 4 chain |
 
 The input data are archived on figshare: [10.6084/m9.figshare.33549025](https://doi.org/10.6084/m9.figshare.33549025) (the DOI without a `.vN` suffix
 always resolves to the latest version of the data record).
@@ -126,7 +127,7 @@ Suggested availability statements (cite the version DOI of the release used for 
 
 > Code availability: The code of the ShadeWalk pipeline (shade-facility extraction, facility-aware SOLWEIG-GPU
 > shadow modelling, pedestrian-network reconstruction and coolest-route pedestrian-flow mapping) is openly available
-> at https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (https://doi.org/10.5281/zenodo.22688709; version 1.0.5).
+> at https://github.com/Shawnzhang7829/ShadeWalk and archived on Zenodo (https://doi.org/10.5281/zenodo.22688709; version 1.0.6).
 >
 > Data availability: The input datasets of the ShadeWalk pipeline (shadow-model rasters, covered-linkway training
 > tiles, transit and building layers) are available on figshare (https://doi.org/10.6084/m9.figshare.33549025).
