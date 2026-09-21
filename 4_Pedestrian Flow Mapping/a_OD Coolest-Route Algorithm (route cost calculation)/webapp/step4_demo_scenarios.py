@@ -25,7 +25,7 @@ for i in range(NE):
     if a==b: continue
     aN[pos[a]]=b;aE[pos[a]]=i;pos[a]+=1; aN[pos[b]]=a;aE[pos[b]]=i;pos[b]+=1
 tree=cKDTree(nxy); print(f"graph N{N} E{NE} | {time.time()-t0:.0f}s",flush=True)
-bw=to3414(gpd.read_file(f"{SHP}\\POI\\building_hourly_weight.gpkg", columns=['building_archetype','geometry']))
+bw=to3414(gpd.read_file(f"{SHP}\\POI+station\\building_hourly_weight_gfa.gpkg", columns=['building_archetype','geometry']))   # building table in use (Module 4b demand_inputs/building_weights.py); only the archetype and the footprint are read here
 cc=bw.geometry.centroid; bx=cc.x.values; by=cc.y.values; arch=bw['building_archetype'].values
 def cxy(m): return np.c_[bx[m],by[m]]
 hdb=cxy(arch=='hdb'); office=cxy(arch=='office')
