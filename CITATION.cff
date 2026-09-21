@@ -32,6 +32,9 @@ identifiers:
     value: 10.5281/zenodo.22842122
     description: "Zenodo archive of version 1.0.5 (tag v1.0.5)"
   - type: doi
+    value: 10.5281/zenodo.22868969
+    description: "Zenodo archive of version 1.0.6 (tag v1.0.6)"
+  - type: doi
     value: 10.5281/zenodo.22688709
     description: "Zenodo concept DOI (always resolves to the latest version)"
 license: MIT
