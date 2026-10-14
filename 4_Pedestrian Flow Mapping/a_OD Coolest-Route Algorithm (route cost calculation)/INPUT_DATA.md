@@ -13,11 +13,11 @@ Data record (input layers referred to below): figshare, https://doi.org/10.6084/
 | Arcade strips | `step2_arcade_sg.gpkg` | 10,076 polygons, `bld_h`, `arc_h` | Module 3b | web tool layers, arcade DSM top for the 3D view |
 | Covered linkways | `covered_linkway_SG_island_tv_pednet_bridged.gpkg` | 6,148 polygons | Module 2 | web tool layers |
 | Remaining buildings | `step2_building_remain_sg.gpkg` | 103,112 polygons with `height` | Module 3b | web tool 3D buildings |
-| Subzone boundaries | `SG_Subzone/SG_subzone boundary 2019_SVY21.shp` | Master Plan 2019 subzone boundaries, EPSG:3414 | data.gov.sg open data (Master Plan 2019 Subzone Boundary; not part of the data record) | maps, sub-zone experiments |
+| Subzone boundaries | `SG_Subzone/SG_subzone boundary 2019_SVY21.shp` | Master Plan 2019 subzone boundaries, EPSG:3414 | data.gov.sg open data (Master Plan 2019 Subzone Boundary; not part of the data record) | maps, sub-zone experiments, web tool Subzone overlay (`webapp/subzone_data.py`) |
 | Road section lines | `RoadSectionLine_Mar2026/RoadSectionLine.shp` | LTA road centre lines | LTA DataMall | web tool basemap layer |
 | Tree points | `SG point tree/Point tree.shp` | about 697,000 tree points with size attributes | trees.sg open tree map (web tool visualisation only) | web tool 3D trees |
 | Station ridership, building weights, per-edge flows | `station_hourly_ridership_v4.gpkg`, `building_hourly_weight_gfa.gpkg`, `step4_4_edges_flow_SG.gpkg` | see Module 4b | Module 4b | web tool (flow layers, HDB footprints, route cards) |
-| Demo OD pairs | `webapp/dist/demo_scenarios.json` | precomputed demonstration origin-destination pairs (`step4_demo_scenarios.py`) | this module | web tool |
+| Demo OD pairs | `webapp/dist/demo_scenarios.json` (`_demo_scenarios_od25.json`) | precomputed demonstration origin-destination pairs, 25 origin-type x destination-type combinations (`step4_demo_scenarios.py`) | this module | web tool |
 
 Parameters: 2 m sampling step along edges, sun position of 13:30 for the half-hour-centred 14:00 shadow, 0.5 m
 endpoint clustering. The demand and routing parameters (lambda, distance decay, catchments, snapping) are listed in
@@ -34,3 +34,4 @@ The derived products below are not part of the data record; they are regenerated
 | `edge_facility_SG.npy`, `edge_shade_nofac_SG.npy`, `edge_px_SG.npz`, `edge_class_1m_totals.csv` | per-edge facility class, no-facility shade, per-metre shade attribution |
 | `edge_shade_hourly_SG.npz` | per-edge shade fraction for every hour 08-18 (keys `h08` ... `h18`, full row order of `step4_4_edges_SG.gpkg`; `h14` = `shade_full`) |
 | `SUB_SG_BUILDING_SHADOW_h14_1m.tif`, `SUB_SG_BLDTREE_SHADOW_h14_1m.tif` | baseline shadow rasters (uint8) |
+| `od_pairs_app.npz`, `od_pairs_app_summary.json` | 14:00 station -> building OD pairs of the web tool's OD flow layer (`webapp/od_export_app.py`) |

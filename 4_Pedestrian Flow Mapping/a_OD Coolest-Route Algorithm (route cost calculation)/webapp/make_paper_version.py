@@ -91,7 +91,7 @@ DTH_NEW=("var PLS=[0.005,0.01,0.02,0.04,0.06,0.09,0.12,0.15,0.18,0.2,0.25,0.35,0
  " if(colorMode==='flow'||colorMode==='rho')redrawNet();if(O>=0&&Dst>=0)route();if(typeof topoOpen==='function'&&topoOpen())topoBuild(true);};lamUpd();")
 # flow legend: label lambda and the approximation
 LEG_OLD="'步行人流量(避热 τ='+DETOUR+'×)'"
-LEG_NEW="'步行人流量(论文口径 λ='+PLAM+')'"
+LEG_NEW="'步行人流量'"   # legend title without a '(paper, λ=…)' suffix
 # flowCur: use the fixed-lambda flow fields (step4_4f); fall back to the nearest level when one is missing
 FC_OLD="function flowCur(){return flowKind==='short'?EF:(FT[DETOUR]||EF);}  // pedestrian-flow field: shortest routes (flow_short, fixed) or the heat-avoiding field of the current Detour limit"
 FC_NEW=("function flowCur(){if(flowKind==='short')return EF;if(!D.flam)return EF;var k=String(PLAM).replace('.','p');if(D.flam[k])return D.flam[k];\n"
@@ -99,29 +99,29 @@ FC_NEW=("function flowCur(){if(flowKind==='short')return EF;if(!D.flam)return EF
  " return best?D.flam[best]:EF;}  // paper build: fixed-lambda flow fields (step4_4f); nearest lambda level if exact one is absent")
 # ===== new rho/omega distribution mode in Network view: colour the whole network by edge resistance rho=(1-sigma)+lambda, redrawn live with the lambda slider =====
 BTN_OLD='<button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">遮荫率 σₑ</button>'
-BTN_NEW='<button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">遮荫率 σₑ</button><button class="btn" id="cRho">路段成本 ωᵢ</button>'
-HND_OLD="document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();};"
-HND_NEW=("document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cRho','cPlain','cNone']);redrawNet();};\n"
- "document.getElementById('cRho').onclick=function(){colorMode='rho';pick(this,['cShade','cFlow','cRho','cPlain','cNone']);ensureNetVisible&&0;redrawNet();cleanView();tip('路段成本 ωᵢ=ℓ×ρ 分布(ρ=(1−σ)+λ,λ='+PLAM+'):深=成本高(长且晒),浅=成本低(短或荫);最遮荫路 = min ω=Σωᵢ');};")
-PICK_OLD="pick(this,['cShade','cFlow','cPlain','cNone']);"
-PICK_NEW="pick(this,['cShade','cFlow','cRho','cPlain','cNone']);"
+BTN_NEW='<button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">遮荫率 σₑ</button><button class="btn" id="cRho">边权 ωₑ</button>'
+HND_OLD="document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cOD','cPlain','cNone']);redrawNet();};"
+HND_NEW=("document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cRho','cOD','cPlain','cNone']);redrawNet();};\n"
+ "document.getElementById('cRho').onclick=function(){colorMode='rho';pick(this,['cShade','cFlow','cRho','cOD','cPlain','cNone']);ensureNetVisible&&0;cleanView();redrawNet();tip('边权 ωₑ=ℓ×ρ 分布(ρ=(1−σ)+λ,λ='+PLAM+'):深紫=成本高(长且晒),黄=成本低(短或荫);最遮荫路 = min ω=Σωₑ');};")
+PICK_OLD="['cShade','cFlow','cOD','cPlain','cNone']"
+PICK_NEW="['cShade','cFlow','cRho','cOD','cPlain','cNone']"
 BIN_OLD="function binFC(mode,srcset){let nb=mode==='shade'?8:6,"
 BIN_NEW="function binFC(mode,srcset){let nb=(mode==='shade'||mode==='rho')?8:6,"
 BINB_OLD="let b=mode==='shade'?Math.min(7,Math.floor(esf(i)/100*8)):Math.min(5,Math.floor(Math.log(EFx[i]+1)/lf*6));"
 BINB_NEW=("let b;if(mode==='rho'){var wi=EL[i]*((1-esf(i)/100)+PLAM);b=Math.max(0,Math.min(7,Math.floor(Math.log(wi+1)/Math.log(300)*8)));}\n"
  "  else b=mode==='shade'?Math.min(7,Math.floor(esf(i)/100*8)):Math.min(5,Math.floor(Math.log(EFx[i]+1)/lf*6));")
-RDW_OLD="else if(colorMode==='plain'){map.getSource('net').setData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#8c8c8c');map.setPaintProperty('net','line-width',LWHALF);}"
-RDW_NEW=("else if(colorMode==='rho'){map.getSource('net').setData(binFC('rho',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':['match',['get','b'],0,RHOC[0],1,RHOC[1],2,RHOC[2],3,RHOC[3],4,RHOC[4],5,RHOC[5],6,RHOC[6],7,RHOC[7],'#888']);map.setPaintProperty('net','line-width',hi?LWHALF:LWFULL);}\n"
- " else if(colorMode==='plain'){map.getSource('net').setData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#8c8c8c');map.setPaintProperty('net','line-width',LWHALF);}")
+RDW_OLD="else if(colorMode==='plain'){netData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#8c8c8c');map.setPaintProperty('net','line-width',LWHALF);}"
+RDW_NEW=("else if(colorMode==='rho'){netData(binFC('rho',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':['match',['get','b'],0,RHOC[0],1,RHOC[1],2,RHOC[2],3,RHOC[3],4,RHOC[4],5,RHOC[5],6,RHOC[6],7,RHOC[7],'#888']);map.setPaintProperty('net','line-width',hi?LWHALF:LWFULL);}\n"
+ " else if(colorMode==='plain'){netData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#8c8c8c');map.setPaintProperty('net','line-width',LWHALF);}")
 SHC_OLD="const SHC=['#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0','#92c5de','#4393c3','#2166ac'];"
 SHC_NEW=("const SHC=['#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0','#92c5de','#4393c3','#2166ac'];\n"
- "const RHOC=['#f7f4ea','#e8dcc0','#d9be92','#c99d68','#b47b47','#96592f','#70401f','#452712'];  // street resistance rho: light=low(shaded), dark=high(sun)")
+ "const RHOC=['#fde725','#a5db36','#5ec962','#28ae80','#21918c','#2a788e','#414487','#440154'];  // edge weight omega bins (viridis reversed): yellow=low cost (short or shaded), dark purple=high cost (long and sunny); bin edges 1 3 8 16 34 71 146 m")
 ULG_OLD="function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){"
 ULG_NEW=("function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';\n"
  " if(colorMode==='rho'){let _bar='';for(let b=0;b<8;b++)_bar+='<span style=\"width:15px;height:10px;display:inline-block;background:'+RHOC[b]+'\"></span>';\n"
- "  l.innerHTML='<b style=\"font-weight:500\">路段成本 ωᵢ=ℓ×ρ(λ='+PLAM+')</b><div style=\"display:flex;margin-top:3px\">'+_bar+'</div>'\n"
- "   +'<div style=\"display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px\"><span>低</span><span>ωᵢ = ℓ×ρ</span><span>高</span></div>'\n"
- "   +'<div style=\"font-size:9px;color:#777;margin-top:2px\">最遮荫路 = min ω=Σωᵢ</div>';\n"
+ "  l.innerHTML='<b style=\"font-weight:500\">边权 ωₑ=ℓ×ρ(λ='+PLAM+')</b><div style=\"display:flex;margin-top:3px\">'+_bar+'</div>'\n"
+ "   +'<div style=\"display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px\"><span>0</span><span>1</span><span>3</span><span>8</span><span>16</span><span>34</span><span>71</span><span>146</span><span></span></div><div style=\"font-size:9px;color:#777;margin-top:2px\">ωₑ = ℓ×ρ(m):黄=低,深紫=高</div>'\n"
+ "   +'<div style=\"font-size:9px;color:#777;margin-top:2px\">最遮荫路 = min ω=Σωₑ</div>';\n"
  "  l.innerHTML+='<br><span class=\"sw\" style=\"background:#0F9E75\"></span>最遮荫路 &nbsp;<span class=\"sw\" style=\"background:#E0791E\"></span>最短路';return;}\n"
  " if(colorMode==='shade'){")
 PATCHES=[(SEC_OLD,SEC_NEW),(SLD_OLD,SLD_NEW),(DEC_OLD,DEC_NEW),(RT_OLD,RT_NEW),(DTH_OLD,DTH_NEW),(LEG_OLD,LEG_NEW),(FC_OLD,FC_NEW),
@@ -135,7 +135,7 @@ for i,(old,new) in enumerate(PATCHES):
     h=h.replace(old,new)
 # add cRho to the pick arrays of the other 3 Network view handlers (the cPlain one was already changed by the HND patch)
 n=h.count(PICK_OLD)
-assert n==3,"pick 数组剩余 %d 处(应 3)"%n
+assert n==6,"pick 数组剩余 %d 处(应 6)"%n
 h=h.replace(PICK_OLD,PICK_NEW)
 open(f"{WEB}\\nav_app_paper.html","w",encoding="utf-8").write(h)
 print("已写 nav_app_paper.html,13 处替换全部命中")

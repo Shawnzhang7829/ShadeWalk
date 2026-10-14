@@ -7,6 +7,28 @@ IN=sys.argv[1] if len(sys.argv)>1 else "nav_app.html"; OUT=sys.argv[2] if len(sy
 html=open(f"{WEB}\\{IN}",encoding="utf-8").read()
 html=html.replace('<html lang="zh">','<html lang="en">')
 R=[
+# ---- 2026-10-14: edge inspector (Network view toggle) ----
+('title="打开后点击路段,查看其长度、遮荫率 σₑ、边权 ωₑ 与人流(开启期间点击不设置起终点)"','title="Click a street segment to see its length, shade σₑ, edge weight ωₑ and pedestrian flow (clicks do not set origin/destination while on)"'),
+('<i class="ti ti-click"></i> 查看路段</button>','<i class="ti ti-click"></i> Inspect edge</button>'),
+("const INSPT={btnOn:'查看路段:点击路网中的任一路段,显示长度、遮荫率 σₑ、边权 ωₑ 与人流;开启期间点击不设置起终点',btnOff:'已关闭查看路段,点击地图恢复设置起终点',none:'附近没有路段,请点得更靠近路段一些',edge:'路段',src:['原始人行道','设施中线(连廊/骑楼)','接入桥'],fac:['日晒','建筑','树木','骑楼','连廊'],facLbl:'主要遮荫:',len:'长度 ℓₑ',sh:'遮荫率 σₑ',rho:'阻力 ρₑ = (1 − σₑ) + λ',w:'边权 ωₑ = ℓₑ · ρₑ',flow:'人流(14:00)',fs:'最短路',fc:'最遮荫路',ppl:' 人',scn:'当前为设施移除场景,σₑ 按移除后计',note:'σₑ 随日间时刻变化;人流为 14:00 预计算结果'};","const INSPT={btnOn:'Inspect edge: click any street segment to see its length, shade σₑ, edge weight ωₑ and pedestrian flow; clicks do not set origin/destination while this is on',btnOff:'Inspect edge off: map clicks set origin/destination again',none:'No street segment here; click closer to a segment',edge:'Edge',src:['original footpath','facility centreline (linkway/arcade)','connector'],fac:['Sun','Building','Tree','Arcade','Linkway'],facLbl:'Main shade: ',len:'Length ℓₑ',sh:'Shade σₑ',rho:'Resistance ρₑ = (1 − σₑ) + λ',w:'Edge weight ωₑ = ℓₑ · ρₑ',flow:'Pedestrian flow (14:00)',fs:'Shortest',fc:'Coolest',ppl:' ppl',scn:'Facility-removal scenario on: σₑ reflects the removal',note:'σₑ follows Daily time; flows are precomputed for 14:00'};"),
+# ---- 2026-10-05: Basemap Subzone overlay ----
+('title="URA 2019 总体规划分区(Subzone)边界与名称,可与任一底图叠加"','title="URA Master Plan 2019 subzone boundaries and names; overlays any basemap"'),
+("tip(subzOn?'Subzone:URA 2019 总体规划 '+D.subz.n.length+' 个分区边界(虚线),放大到 12 级以上显示名称;可与任一底图叠加':'已关闭 Subzone 分区')","tip(subzOn?'Subzone: URA Master Plan 2019, '+D.subz.n.length+' subzone boundaries (dashed); names appear from zoom 12; overlays any basemap':'Subzone overlay off')"),
+# ---- 2026-09-23: Demo scenarios: origin/destination type dropdowns (long strings first) ----
+('<div class="sec" style="margin:7px 0 3px">Demo 场景</div>','<div class="sec" style="margin:7px 0 3px">Demo scenarios</div>'),
+('title="起点类型"','title="Origin type"'),
+('title="终点类型"','title="Destination type"'),
+('>起点</option>','>Origin</option>'),
+('>终点</option>','>Destination</option>'),
+('>组屋</option>','>HDB</option>'),
+('>办公</option>','>Office</option>'),
+('>公交</option>','>Transit</option>'),
+('>餐饮</option>','>Dining</option>'),
+('>商超</option>','>Store</option>'),
+('title="换一个示例(每种组合 5 条,1 英里内且最短路与最遮荫路不重合)"','title="Another example (5 per combination, each within 1 mile, Shortest and Coolest take different streets)"'),
+("const DMN={hdb:'组屋',office:'办公',transit:'公交',dining:'餐饮',store:'商超'};","const DMN={hdb:'HDB',office:'Office',transit:'Transit',dining:'Dining',store:'Store'};"),
+("tip('请先选择起点和终点类型')","tip('Choose an origin type and a destination type first')"),
+("'起点:'+nm.split('→')[0]+' ('","'Origin: '+nm.split('→')[0]+' ('"),
 (">遮荫率 σₑ</button>",">Shade σₑ</button>"),
 ('title="路段遮荫率 σₑ(随日间时刻)"','title="Edge shade fraction σₑ (follows the Daily time slider)"'),
 # ---- 2026-09-17: Daily time slider (hourly network shade / routing) ----
@@ -17,16 +39,31 @@ R=[
 ("最短路径的人流分布,不随绕行上限/λ 变化","flow on the shortest routes; independent of the detour limit / λ"),
 ("步行人流量(最短路径,不随 τ/λ)","Pedestrian flow (shortest routes, independent of τ / λ)"),
 ("<span class=\"fkLbl\">人流场</span>","<span class=\"fkLbl\">Flow field</span>"),
+# ---- 2026-09-16: strings written by make_paper_version.py (current wording) + collapse tooltip ----
+# ---- 2026-09-16: OD flow mode (network view) ----
+('title="OpenFreeMap Positron 矢量底图(OSM 数据)"','title="OpenFreeMap Positron vector basemap (OSM data)"'),
+("Positron 底图加载失败:","Positron basemap failed to load: "),
+(">OD 流量</button>",">OD flow</button>"),
+('title="14:00 站点→建筑 OD 对(Huff 分配人数)"','title="14:00 station→building OD pairs (Huff-allocated persons)"'),
+("OD 流量:14:00 站点→建筑 OD 对(Huff 模型分配人数,对数色标:浅黄=少,深紫=多;线宽随人数增大),黑点=站点(大小=客流),线终点=建筑几何中心(灰点,放大到街区显示;同一路网节点上的多栋建筑按权重拆分) · ","OD flow: 14:00 station→building OD pairs (persons allocated by the Huff model; log colour scale: pale yellow = few, dark purple = many; width grows with persons), black dots = stops (size = ridership), line ends = building centroids (grey dots, shown at block zoom; several buildings on one network node share that node flow by weight) · "),
+("14:00 站点→建筑 OD 流量(Huff 分配人数)</b>","14:00 station→building OD flow (Huff-allocated persons)</b>"),
+("人/对(对数色标) · 线宽:","persons per pair (log colour scale) · line width: "),
+(" MRT 出口/巴士站(大小=客流) &nbsp;"," MRT exit / bus stop (size = ridership) &nbsp;"),
+(' 建筑中心点</div><div style="font-size:9px;color:#777;margin-top:2px">',' building centroid</div><div style="font-size:9px;color:#777;margin-top:2px">'),
+# OD legend: the builder no longer writes the summary line under the colour bar, so its rule was dropped
+("边权 ωₑ=ℓ×ρ 分布(ρ=(1−σ)+λ,λ='+PLAM+'):深紫=成本高(长且晒),黄=成本低(短或荫);最遮荫路 = min ω=Σωₑ","Edge weight ωₑ=ℓ×ρ (ρ=(1−σ)+λ, λ='+PLAM+'): dark purple = costly (long and sunny), yellow = cheap (short or shaded); Coolest = min ω=Σωₑ"),
+('ωₑ = ℓ×ρ(m):黄=低,深紫=高','ωₑ = ℓ×ρ (m): yellow = low, dark purple = high'),
+('title="折叠/展开"','title="collapse / expand"'),
 # ---- new rho/omega topology strings of the paper-routing build (nav_app_paper); placed first so they match first ----
 # ---- paper build: lambda / exchange-rate panel + resistance rho distribution mode ----
 ("遮荫回报率 Shade reward(η)","Shade reward (η)"),
 ("当 λ 取默认值 0.2 时:遮荫回报率 η=λ/(1+λ)=<b>1/6</b>,即绕行只有在至少这一比例的额外路程转化为减少的日晒时才划算;<b>日晒 1 米 = 荫下 6.0 米</b>。例:1000 m 的路多绕 100 m,须至少少晒 17 m 才值得。","With the default λ=0.2: the shade reward η=λ/(1+λ)=<b>1/6</b> means a detour pays off only if at least this share of the extra distance converts into avoided sun; <b>1 m in the sun = 6.0 m in shade</b>. E.g. adding 100 m to a 1000 m walk pays off only if it avoids at least 17 m of sun."),
-("路段成本 ωᵢ=ℓ×ρ 分布(λ='+PLAM+'):深=阻力大(晒),浅=阻力小(荫);最遮荫路 = min ω=Σℓ×ρ","Segment cost ωᵢ=ℓ×ρ (ρ=(1−σ)+λ, λ='+PLAM+'): dark = costly (long and sunny), light = cheap (short or shaded); coolest route = min ω=Σωᵢ"),
-("路段成本 ωᵢ=ℓ×ρ(λ='+PLAM+')","Segment cost ωᵢ=ℓ×ρ (λ='+PLAM+')"),
-("最遮荫路 = min ω=Σωᵢ","Coolest = min ω=Σωᵢ"),
+("边权 ωₑ=ℓ×ρ 分布(λ='+PLAM+'):深=阻力大(晒),浅=阻力小(荫);最遮荫路 = min ω=Σℓ×ρ","Edge weight ωₑ=ℓ×ρ (ρ=(1−σ)+λ, λ='+PLAM+'): dark purple = costly (long and sunny), yellow = cheap (short or shaded); coolest route = min ω=Σωₑ"),
+("边权 ωₑ=ℓ×ρ(λ='+PLAM+')","Edge weight ωₑ=ℓ×ρ (λ='+PLAM+')"),
+("最遮荫路 = min ω=Σωₑ","Coolest = min ω=Σωₑ"),
 (">全荫</span>",">all shade</span>"),
 (">全晒</span>",">all sun</span>"),
-(">路段成本 ωᵢ</button>",">Segment cost ωᵢ</button>"),
+(">边权 ωₑ</button>",">Edge weight ωₑ</button>"),
 ("步行人流量(论文口径 λ=","Pedestrian flow (paper, λ="),
 ("图1 · 路径级:点=OD,边=可行路径(互不交叉;越宽=权重越小=越优;路径权重 ω=Σℓ×((1−遮荫)+λ),λ='+PLAM+',coolest=min ω)","Graph 1 · Path level: nodes = O/D, edges = feasible paths (non-crossing; wider = lower weight = better; path weight ω = Σℓ×((1−shade)+λ), λ=0.2, coolest = min ω)"),
 ("图2 · 街道级:点=OD+道路交叉口,边=街道(越宽阻力越小;街道路权 ρ=(1−遮荫)+λ,λ='+PLAM+')","Graph 2 · Street level: nodes = O/D + road intersections, edges = streets (wider = lower resistance; street resistance ρ = (1−shade)+λ, λ=0.2)"),
@@ -171,7 +208,7 @@ R=[
 ("路网(无色)","Network (plain)"),
 ("路网线","network line"),
 ("无色","Plain"),
-("可选起讫点(点击设起/终点)","Selectable O/D points (click to set)"),
+("起讫点 O/D points","O/D points"),
 ("站点 MRT/巴士","Stations (MRT / bus)"),
 ("建筑中心点","Building centroids"),
 ("工作日客流 ","weekday flow "),
@@ -277,10 +314,7 @@ R=[
 ("'起'","'A'"),("'终'","'B'"),
 ("// 任意点 → 最近路段垂足:返回接入端点(较近交叉口)、垂足经纬度、接入米数(点击→垂足 + 垂足→端点沿边)","// any point -> perpendicular foot on nearest edge: access node (nearer junction), foot lng/lat, access metres (click->foot + foot->node)"),
 ("接入步行 ","Access walk "),
-("Demo 场景(点击轮换 · ","Demo scenarios (click to cycle · "),("min步行圈)","min walk)"),
-("组屋→公交","HDB→Transit"),("办公→公交","Office→Transit"),("办公→餐饮","Office→Dining"),("组屋→商超","HDB→Store"),
 ("该场景暂无示例","No demo for this scenario"),
-("'起点:'+nm+' ('","'Origin: '+nm+' ('"),
 ("'终点:'+nm.split('→')[1]","'Dest: '+nm.split('→')[1]"),
 (" m(灰虚线,从点击点垂直接入最近路段);下列为含接入的总行程。"," m (grey dashed: perpendicular access from click to nearest path); totals below include access."),
 ]

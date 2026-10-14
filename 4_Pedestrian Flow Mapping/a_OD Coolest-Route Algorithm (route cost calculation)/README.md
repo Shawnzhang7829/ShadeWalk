@@ -8,13 +8,14 @@ flow products on these costs are Module 4b (`routing_flow/`). Environment A.
 
 ## 1. Route cost
 
-For every network edge *i* with length `l_i` and 14:00 shade fraction `sigma_i` (share of the edge in shadow):
+For every network edge *e* with length `l_e` and 14:00 shade fraction `sigma_e` (share of the edge in shadow):
 
 ```
-rho_i   = (1 - sigma_i) + lambda          street resistance
-omega_i = l_i * rho_i                       edge cost
-coolest route = argmin over paths of  sum(omega_i)         (Dijkstra)
-shortest route = argmin of  sum(l_i)                        (lambda -> infinity)
+rho_e   = (1 - sigma_e) + lambda          edge resistance
+omega_e = rho_e * l_e                       edge weight
+W = sum(omega_e)                            route cost
+coolest route = argmin over paths of  W                    (Dijkstra)
+shortest route = argmin of  sum(l_e)                        (lambda -> infinity)
 ```
 
 `lambda` is the *shade reward* parameter: the extra distance a walker accepts in exchange for shade. The paper uses
@@ -25,7 +26,7 @@ by the flow scripts of Module 4b (`step4_4f_flow_lam.py`, `step4_4e_flow_detour.
 
 ## 2. Edge shade
 
-`sigma_i` is sampled every 2 m along the edge from the full-system 14:00 shadow raster of Module 1 (buildings, trees,
+`sigma_e` is sampled every 2 m along the edge from the full-system 14:00 shadow raster of Module 1 (buildings, trees,
 covered linkways, arcades; 1 = sunlit, 0 = shaded) and, for the building-only baseline, from a building-only shadow
 raster computed here; edges through building footprints count as fully shaded (indoor). The hourly variant samples the
 24-band raster for every hour 08-18 and feeds the Daily-time slider of the web tool. The dominant shade source of every

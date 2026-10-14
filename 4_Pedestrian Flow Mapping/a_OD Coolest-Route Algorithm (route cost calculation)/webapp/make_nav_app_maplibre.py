@@ -3,6 +3,7 @@
 """MapLibre GL build of the heat-avoidance navigation app (GPU true vectors, crisp at any zoom).
 True network polylines (binned by shade fraction / pedestrian flow into a few MultiLineStrings) + arcade / covered linkway / building footprint vector polygons + tree / shadow / class raster layers
 + OneMap/OSM tile basemap + JS Dijkstra live routing. Coordinates are 3857-relative (JS converts back to lng/lat); data is inlined so the page opens by double-click. pyenv."""
+import sys as _sys, os as _os; _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__))); from subzone_data import build_subz   # Basemap 'Subzone' overlay data (subzone_data.py)
 import geopandas as gpd, numpy as np, json, time, io, base64, os
 from scipy.spatial import cKDTree
 from rasterio.enums import Resampling
@@ -165,6 +166,15 @@ SSRC=(gs2['source'].astype(str).str.upper()=='MRT').astype(int).tolist()
 SCODE=(gs2['CODES'] if 'CODES' in gs2.columns else gs2['PT_CODE']).astype(str).tolist()   # v4: all line codes sharing the exit, e.g. 'CC17,TE9'
 SRID=np.round(np.nan_to_num(sum(gs2[f'inj_weekday_{h:02d}'].values.astype(float) for h in range(24)))).astype(int).tolist()   # v4 (2026-09-17): daily injection of the record = station total / real exit points, 24 h summed
 print(f"站点{len(SX)} (MRT {sum(SSRC)}) | {time.time()-t0:.0f}s",flush=True)
+# OD flow layer: 14:00 station->building OD pairs of the Huff demand model (od_export_app.py: station_hourly_ridership_v4 per-exit /
+# per-line-code weights, catchment 400 m bus / 800 m MRT, exp(-d/350)); station index = row of the station table above (same row order);
+# destination = the app's building-centroid point (step2_building_remain_sg.gpkg, same points as the 'Building centroids' layer; demand buildings matched by footprint overlap / nearest <= 30 m, own centroid otherwise; the node's Huff share split by building weight), stored in app metres; sorted by volume so that big pairs are drawn last
+_z=np.load(f"{OUT}\\od_pairs_app.npz"); _ob=np.argsort(_z['v'],kind='stable'); _ov=_z['v'][_ob]; _os=_z['s'][_ob].astype(int); assert _os.max()<len(SX), (_os.max(), len(SX))
+_bmx,_bmy=to_m(_z['cx'][_ob],_z['cy'][_ob]); _smx,_smy=to_m(_z['sx'][_ob],_z['sy'][_ob]); assert np.abs(np.round(_smx-ox)-np.array(SX)[_os]).max()<=1 and np.abs(np.round(_smy-oy)-np.array(SY)[_os]).max()<=1, 'station rows of the OD table do not match the app station table'
+OD=dict(s=_os.tolist(),x=np.round(_bmx-ox).astype(int).tolist(),y=np.round(_bmy-oy).astype(int).tolist(),v=[float(f'{v:.3g}') for v in _ov],
+        n=int(len(_ov)),ns=int(len(np.unique(_os))),nb=int(len(np.unique(np.where(_z['ab']>=0,_z['ab'],10**7+_z['b'])))),nn=int(len(np.unique(_z['n']))),tot=float(round(_ov.sum())),q50=float(round(np.percentile(_ov,50),2)),q90=float(round(np.percentile(_ov,90),1)),
+        q99=float(round(np.percentile(_ov,99))),vmax=float(round(_ov.max())),n100=int((_ov>=100).sum()),p100=float(round(100*_ov[_ov>=100].sum()/_ov.sum())))
+print(f"OD 流量对 {OD['n']:,} (站点 {OD['ns']:,} → 建筑 {OD['nb']:,} / 节点 {OD['nn']:,}, 共 {OD['tot']:,.0f} 人; ≥100 人 {OD['n100']} 对占 {OD['p100']:.0f}%) | {time.time()-t0:.0f}s",flush=True)
 
 # all rasters inlined (self-contained, no server needed): tree 10 m PNG + shadow/class 40 m hourly frames (reusing the cache)
 HL=json.load(open(f"{OUT}\\_hourly_layers.json"))
@@ -184,7 +194,7 @@ else:
     treeImg=png_uri(trg); EXT_T=ext3857([cb.left,cb.bottom,cb.right,cb.top])
     json.dump({'t':treeImg,'et':EXT_T},open(_RCACHE,'w'))
 shadH=HL['shad']; catH=HL['cat']  # hourly shadow/class frames (08-18h, 11 frames @10 m)
-_ESHZ=np.load(f"{OUT}\\edge_shade_hourly_SG.npz")  # 0917 逐时边遮荫(step4_4b_city_edge_shade_hourly.py: 8-18 点,口径同 shade_full,全表行序)
+_ESHZ=np.load(f"{OUT}\\edge_shade_hourly_SG.npz")  # hourly edge shade (step4_4b_city_edge_shade_hourly.py: 08-18 h, same definition as shade_full, full-table row order)
 ESH=[np.clip(np.round(np.nan_to_num(_ESHZ[f"h{int(h):02d}"][_C0])*100),0,100).astype(np.uint8) for h in HL['hours']]
 _d14=np.abs(np.nan_to_num(_ESHZ["h14"][_C0])-np.nan_to_num(e['shade_full'].values)).max()
 assert _d14<1e-6, f"edge_shade_hourly_SG.npz 的 14:00 层与 gpkg shade_full 不一致(max diff {_d14:.3g}):用同一 BREMAIN 掩膜重算(step4_4b_city_edge_shade_hourly.py --brem)"
@@ -197,10 +207,11 @@ def _sumtot(h):
 _b14=_sumtot(14) or 1.0; FACR=[round(_sumtot(h)/_b14,3) for h in HL['hours']]
 print(f"设施逐时比例(相对14:00) {FACR} | {time.time()-t0:.0f}s",flush=True)
 
-_demoOD=json.load(open(f"{OUT}\\_demo_scenarios.json",encoding='utf-8')) if os.path.exists(f"{OUT}\\_demo_scenarios.json") else {}
-data=dict(ox=ox,oy=oy,egeom=EGEOM,es=ES.tolist(),ef=EF.tolist(),efo=EFO.tolist(),eu=U.tolist(),ev=V.tolist(),el=EL.tolist(),efac=EFAC.tolist(),esrc=ESRC.tolist(),esn=ESN.tolist(),esh=[base64.b64encode(a.tobytes()).decode() for a in ESH],ft100=FT_[100].tolist(),ft120=FT_[120].tolist(),ft150=FT_[150].tolist(),ft200=FT_[200].tolist(),flam=FLAM,
+_demoOD=json.load(open(f"{OUT}\\_demo_scenarios_od25.json",encoding='utf-8')) if os.path.exists(f"{OUT}\\_demo_scenarios_od25.json") else {}
+SUBZ=build_subz(ox,oy)   # Subzone overlay data (URA Master Plan 2019 subzones, see subzone_data.py)
+data=dict(ox=ox,oy=oy,subz=SUBZ,egeom=EGEOM,es=ES.tolist(),ef=EF.tolist(),efo=EFO.tolist(),eu=U.tolist(),ev=V.tolist(),el=EL.tolist(),efac=EFAC.tolist(),esrc=ESRC.tolist(),esn=ESN.tolist(),esh=[base64.b64encode(a.tobytes()).decode() for a in ESH],ft100=FT_[100].tolist(),ft120=FT_[120].tolist(),ft150=FT_[150].tolist(),ft200=FT_[200].tolist(),flam=FLAM,
           nx=NX.tolist(),ny=NY.tolist(),arc=arcR,lkw=lkwR,bld=bldR,hdb=hdbR,bldH=bldH,arcBH=arcBH,tree3d=tree3d,arcF=arcF,lkwF=lkwF,facR=FACR,facnet=FACNET,demoOD=_demoOD,
-          bcx=BCX.tolist(),bcy=BCY.tolist(),stx=SX.tolist(),sty=SY.tolist(),sts=SSRC,stc=SCODE,srid=SRID,
+          od=OD,bcx=BCX.tolist(),bcy=BCY.tolist(),stx=SX.tolist(),sty=SY.tolist(),sts=SSRC,stc=SCODE,srid=SRID,
           treeImg=treeImg,extT=EXT_T,shadH=shadH,catH=catH,extS=EXT_S,extC=EXT_C,hours=HL['hours'],
           xmin=int(NX.min()),xmax=int(NX.max()),ymin=int(NY.min()),ymax=int(NY.max()))
 dj=json.dumps(data,separators=(',',':')); print(f"JSON {len(dj)/1e6:.1f} MB | {time.time()-t0:.0f}s",flush=True)
@@ -214,10 +225,11 @@ HTML=r'''<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="
 #app{display:flex;height:100vh;width:100vw}
 #panel{width:374px;flex:none;background:#fafaf7;border-right:1px solid #e2e0d7;padding:15px 17px;overflow-y:auto}
 #map{flex:1;position:relative}
-.h{font-size:18px;font-weight:500;display:flex;align-items:center;gap:8px;margin:0 0 4px}
+.h{font-size:18px;font-weight:500;display:flex;align-items:center;gap:8px;margin:0 0 13px}
 .sub{font-size:12px;color:#8a8980;margin:0 0 13px;line-height:1.5}
 .row{display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 10px;border:1px solid #e2e0d7;border-radius:8px;background:#fff;margin-bottom:8px}
 .btn{font-size:13px;padding:7px 10px;border:1px solid #cfcdc3;border-radius:8px;background:#fff;cursor:pointer;color:#444}
+.dmSel{flex:1;min-width:0;font-size:12px;padding:6px 4px;border:1px solid #cfcdc3;border-radius:8px;background:#fff;cursor:pointer;color:#444}
 .btn:hover{background:#f0efe9}.btn.on{border:2px solid #444;color:#fff;background:#444;padding:6px 9px}
 .card{border:1px solid #e2e0d7;border-radius:11px;background:#fff;padding:11px 13px;margin-bottom:9px}
 .card.cool{border-left:4px solid #0F9E75}.card.short{border-left:4px solid #E0791E}
@@ -233,19 +245,19 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
 <div id="app">
 <aside id="panel">
   <div class="h"><svg viewBox="0 0 24 24" width="30" height="30" style="flex:none" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5.5" fill="#2e8b46"/><rect x="4.5" y="5" width="15" height="2.1" rx="0.6" fill="#ffd23f"/><line x1="6.3" y1="6.9" x2="6.3" y2="17.6" stroke="#ffd23f" stroke-width="1.4" stroke-linecap="round"/><line x1="17.7" y1="6.9" x2="17.7" y2="17.6" stroke="#ffd23f" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="9.7" r="1.62" fill="#fff"/><path d="M11.5 12.5C9.9 14 9.85 16.3 11.5 19.4Q12 20.1 12.5 19.4C14.15 16.3 14.1 14 12.5 12.5Q12 11.95 11.5 12.5Z" fill="#fff"/></svg>ShadeWalk</div>
-  <p class="sub">MapLibre 矢量 · 新加坡全城真实步行网络 · 14:00 · 实时路由</p>
+
   <div class="row"><i class="ti ti-current-location" style="color:#0F6E56;font-size:16px"></i><span id="oTxt">起点:点击地图选择</span></div>
   <div class="row"><i class="ti ti-map-pin" style="color:#c0392b;font-size:16px"></i><span id="dTxt">终点:再次点击地图</span></div>
   <div style="display:flex;gap:7px;margin-bottom:12px">
     <button class="btn" id="bDemo"><i class="ti ti-sparkles"></i> 示例</button>
     <button class="btn" id="bSwap"><i class="ti ti-arrows-up-down"></i> 互换</button>
     <button class="btn" id="bClear"><i class="ti ti-x"></i> 清除</button></div>
-  <div class="sec" style="margin:7px 0 3px">Demo 场景(点击轮换 · 15 分钟步行圈)</div>
-  <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px">
-    <button class="btn" id="dmHt" style="font-size:12px;padding:6px 8px"><i class="ti ti-building-community"></i> 组屋→公交</button>
-    <button class="btn" id="dmOt" style="font-size:12px;padding:6px 8px"><i class="ti ti-building-skyscraper"></i> 办公→公交</button>
-    <button class="btn" id="dmOf" style="font-size:12px;padding:6px 8px"><i class="ti ti-tools-kitchen-2"></i> 办公→餐饮</button>
-    <button class="btn" id="dmHm" style="font-size:12px;padding:6px 8px"><i class="ti ti-shopping-cart"></i> 组屋→商超</button>
+  <div class="sec" style="margin:7px 0 3px">Demo 场景</div>
+  <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+    <select id="dmO" class="dmSel" title="起点类型"><option value="" selected disabled>起点</option><option value="hdb">组屋</option><option value="office">办公</option><option value="transit">公交</option><option value="dining">餐饮</option><option value="store">商超</option></select>
+    <i class="ti ti-arrow-right" style="color:#999;font-size:14px"></i>
+    <select id="dmD" class="dmSel" title="终点类型"><option value="" selected disabled>终点</option><option value="hdb">组屋</option><option value="office">办公</option><option value="transit">公交</option><option value="dining">餐饮</option><option value="store">商超</option></select>
+    <button class="btn" id="dmNext" title="换一个示例(每种组合 5 条,1 英里内且最短路与最遮荫路不重合)" style="font-size:12px;padding:6px 8px"><i class="ti ti-refresh"></i></button>
   </div>
   <div class="sec" style="margin:9px 0 4px">绕行阈值 Detour limit</div>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12px"><input type="range" id="detTh" min="0" max="3" step="1" value="2" style="flex:1"><span id="detThV" style="min-width:40px;text-align:right;color:#0F6E56;font-weight:600">1.5×</span></div>
@@ -262,7 +274,7 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   </div>
   <div id="results"></div>
   <hr>
-  <div class="sec" style="margin-bottom:3px">可选起讫点(点击设起/终点)</div>
+  <div class="sec" style="margin-bottom:3px">起讫点 O/D points</div>
   <label class="lay"><input type="checkbox" id="lyStaPt"><span class="sw2" style="background:#f39c12;border-radius:50%"></span>站点 MRT/巴士</label>
   <label class="lay"><input type="checkbox" id="lyBldPt"><span class="sw2" style="background:#6a51a3;border-radius:50%"></span>建筑中心点</label>
   <hr>
@@ -271,12 +283,14 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <hr>
   <div class="sec" style="margin-bottom:5px">Basemap</div>
   <div style="display:flex;gap:7px;margin-bottom:11px"><button class="btn on" id="bmGray">Simple</button><button class="btn" id="bmOsm" title="OpenFreeMap Positron 矢量底图(OSM 数据)">OSM</button><button class="btn" id="bmOne">OneMap</button><button class="btn" id="bmGsat">卫星</button><button class="btn" id="bmNone">无</button></div>
+  <div style="display:flex;gap:7px;margin:-4px 0 11px"><button class="btn" id="bmSubz" title="URA 2019 总体规划分区(Subzone)边界与名称,可与任一底图叠加"><i class="ti ti-map-2"></i> Subzone</button></div>
   <div class="sec" style="margin-bottom:5px">视图 View</div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"><button class="btn on" id="v2d">2D 平面</button><button class="btn" id="v3d">3D 鸟瞰</button><button class="btn" id="bPov"><i class="ti ti-walk"></i> 行人视角</button></div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px"><button class="btn" id="bSun" title="逐时太阳遮荫(随时刻滑杆)">太阳阴影</button><button class="btn" id="aCol" title="骑楼柱廊柱子(仅3D)">骑楼柱子</button><button class="btn" id="bTopo" title="OD 间可行路径拓扑图(绕行率上限=My Demos 的 Detour limit)">拓扑图</button></div>
   <div class="sec" style="margin-bottom:5px">网络视图</div>
-  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">遮荫率 σₑ</button><button class="btn" id="cFlow">人流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn" id="cShade" title="路段遮荫率 σₑ(随日间时刻)">遮荫率 σₑ</button><button class="btn" id="cFlow">人流量</button><button class="btn" id="cOD" title="14:00 站点→建筑 OD 对(Huff 分配人数)">OD 流量</button><button class="btn on" id="cPlain">无色</button><button class="btn" id="cNone">隐藏</button></div>
   <div id="fkBox" class="fkTabs"><span class="fkLbl">人流场</span><button class="fkTab on" id="fkCool" title="避热路径(coolest)的人流分布,随绕行上限/λ 变化">最遮荫路</button><button class="fkTab" id="fkShort" title="最短路径的人流分布,不随绕行上限/λ 变化">最短路</button></div>
+  <div style="display:flex;gap:7px;margin:0 0 11px"><button class="btn" id="eInsp" title="打开后点击路段,查看其长度、遮荫率 σₑ、边权 ωₑ 与人流(开启期间点击不设置起终点)"><i class="ti ti-click"></i> 查看路段</button></div>
   <div class="sec" style="margin-bottom:5px">人工遮荫设施(连廊/骑楼)</div>
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px"><button class="btn on" id="fAll">全部</button><button class="btn" id="fOrig">仅原始</button><button class="btn" id="fHi">分类高亮</button><button class="btn" id="fHiM">统一高亮</button></div>
   <div class="sec" style="margin-bottom:5px">显示路线</div>
@@ -292,7 +306,7 @@ hr{border:none;border-top:1px solid #e2e0d7;margin:13px 0}
   <div class="sec" style="margin-bottom:5px">遮荫栅格 (10m)</div>
   <label class="lay"><input type="checkbox" id="lyShad"><span class="sw2" style="background:#2c7fb8"></span>阴影 Shadow(随滑杆)</label>
   <label class="lay"><input type="checkbox" id="lyCat"><span class="sw2" style="background:#d4322c"></span>分类 Category(随滑杆)</label>
-  <p class="sub" style="margin-top:13px">点击地图设起点/终点。最遮荫路=最小日晒里程;最短路=最短距离。栅格已内联(树木/阴影/分类均 ≈10m 单帧),双击即可打开,无需服务器。</p>
+
 </aside>
 <main id="map"><div id="legwrap"><div class="leg" id="leg"></div><div id="catleg" style="display:none"></div></div><div id="tip"></div>
  <div id="prof" style="display:none;position:absolute;left:12px;top:12px;width:567px;background:rgba(255,255,255,.96);border:1px solid #d8d6cc;border-radius:10px;padding:7px 10px 10px;box-shadow:0 2px 12px rgba(0,0,0,.12);z-index:5;resize:horizontal;overflow:hidden;min-width:250px;max-width:900px">
@@ -362,7 +376,7 @@ function pathFlow(r){if(!r||!r.eis||!r.eis.length)return 0;let s=0,F=flowCur();f
 function facShade(r){if(!r||!r.eis||!r.eis.length)return{arc:0,lkw:0,arcM:0,lkwM:0,totM:0};let arcM=0,lkwM=0,totM=0;for(let k=0;k<r.eis.length;k++){let ei=r.eis[k],sm=EL[ei]*esf(ei)/100;totM+=sm;if(D.efac[ei]===3&&SCN.arc)arcM+=sm;else if(D.efac[ei]===4&&SCN.lkw)lkwM+=sm;}return{arcM:arcM,lkwM:lkwM,totM:totM,arc:totM>0?arcM/totM:0,lkw:totM>0?lkwM/totM:0};}  // 骑楼(3)/连廊(4)对路径总遮荫的贡献占比,口径同剖面:每边遮荫米数 EL×ES/100,分母=路径总遮荫米数(=shade×len)
 function facLine(r){let f=facShade(r);return '<div class="mut" style="font-size:11px;margin-top:2px">人工设施遮荫贡献 <b style="color:#d4322c" title="骑楼段沿路提供遮荫约 '+Math.round(f.arcM)+' m">骑楼 '+Math.round(f.arc*100)+'%</b> · <b style="color:#2c7fb8" title="有盖连廊段沿路提供遮荫约 '+Math.round(f.lkwM)+' m">连廊 '+Math.round(f.lkw*100)+'%</b> <span style="opacity:.65">(合计 '+Math.round((f.arc+f.lkw)*100)+'%)</span></div>';}
 let DETOUR=1.5;   // detour limit (slider): cool path length <= shortest*DETOUR, pick the max shade-coverage path
-let flowKind='cool';   // 2026-09-17 pedestrian-flow field: 'cool' = heat-avoiding routes (follows the detour limit / lambda), 'short' = shortest routes (flow_short, fixed)
+let flowKind='cool';   // 0917 pedestrian-flow field: 'cool' = heat-avoiding routes (follows the detour limit / lambda), 'short' = shortest routes (flow_short, fixed)
 function coolDetour(O,Dst,s){  // smaller lam = more shaded (more detour); within detour<=DETOUR take smallest lam = max shade coverage
  if(!s)return null;let c0=dij(O,Dst,'cool',0);            // lam=0 = pure most-shaded (longest detour)
  if(c0&&c0.len<=s.len*DETOUR+1)return c0;                 // pure-shaded already within detour limit -> use it (max coverage)
@@ -405,11 +419,38 @@ function binFC(mode,srcset){let nb=mode==='shade'?8:6,bins=Array.from({length:nb
 function facNetFC(){var co=[[],[],[],[],[]];for(let k=0;k<D.facnet.length;k++){co[D.facnet[k][1]].push(edgeLL(D.facnet[k][0]));}return {type:'FeatureCollection',features:co.map((c,g)=>({type:'Feature',properties:{g:g},geometry:{type:'MultiLineString',coordinates:c}}))};}
 let facMode='all';
 function ensureFac(){if(!map.getLayer('netfac')){map.addSource('netfac',{type:'geojson',data:facNetFC()});map.addLayer({id:'netfac',type:'line',source:'netfac',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['match',['get','g'],0,'#d6336c',1,'#2b6cb0',2,'#9b59b6',3,'#12a5b0',4,'#e07b2a','#888'],'line-width':['interpolate',['linear'],['zoom'],11,1.8,14,3.4,17,5.5],'line-opacity':0.96}},'rs');}}
-function redrawNet(){if(colorMode==='none'){map.setLayoutProperty('net','visibility','none');if(map.getLayer('netfac'))map.setLayoutProperty('netfac','visibility','none');updLeg();return;}
+// 0916 OD flow layer: 14:00 station->building OD pairs of the Huff demand model (od_export_app.py; per-exit / per-line-code station weights).
+// Colour = inferno_r truncated 0.12-0.96 on log10(persons) 0.1-3,000 and width growing with log10(persons), as the SI OD-volume map (sup Table1/9 0914 v3); 9 half-decade bins.
+const ODC=['#fbb61a','#f8890c','#e9612b','#cc4248','#ab2f5e','#84206b','#5f136e','#360961','#10092d'],ODW=[0.10,0.10,0.154,0.262,0.37,0.477,0.585,0.693,0.801],ODG=['#f8cd37','#fca50a','#f57d15','#e55c30','#cb4149','#ab2f5e','#8a226a','#67166e','#450a69','#1f0c48','#050417'];
+function odBin(v){return Math.max(0,Math.min(8,Math.floor((Math.log10(Math.max(v,1e-9))+1)/0.5)));}
+function odFC(){let o=D.od,bins=Array.from({length:9},(_,b)=>({type:'Feature',properties:{b:b,w:ODW[b]},geometry:{type:'MultiLineString',coordinates:[]}}));
+ for(let i=0;i<o.s.length;i++){let s=o.s[i];bins[odBin(o.v[i])].geometry.coordinates.push([ll(D.stx[s],D.sty[s]),ll(o.x[i],o.y[i])]);}
+ return {type:'FeatureCollection',features:bins};}
+function ensureOD(){if(map.getLayer('odf'))return;let RS=['sqrt',['/',['min',['get','r'],40000],40000]];
+ map.addSource('odf',{type:'geojson',data:odFC()});
+ map.addLayer({id:'odf',type:'line',source:'odf',layout:{'line-cap':'round','line-join':'round','line-sort-key':['get','b'],visibility:'none'},paint:{'line-color':['match',['get','b'],0,ODC[0],1,ODC[1],2,ODC[2],3,ODC[3],4,ODC[4],5,ODC[5],6,ODC[6],7,ODC[7],8,ODC[8],'#888'],'line-width':['interpolate',['linear'],['zoom'],11,['*',['get','w'],1.3],14,['*',['get','w'],3.2],17,['*',['get','w'],4.5]],'line-opacity':['interpolate',['linear'],['zoom'],14,0.75,17,0.55]}},'rs');
+ map.addSource('odfBld',{type:'geojson',data:bldPtGeo()});
+ map.addLayer({id:'odfBld',type:'circle',source:'odfBld',minzoom:13,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],13,1.0,17,3.0],'circle-color':'#B8B8B8','circle-opacity':0.95,'circle-stroke-width':['interpolate',['linear'],['zoom'],13,0.3,17,0.8],'circle-stroke-color':'#fff'}},'rs');
+ map.addSource('odfSta',{type:'geojson',data:staGeo()});
+ map.addLayer({id:'odfSta',type:'circle',source:'odfSta',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],11,['+',0.8,['*',2.6,RS]],14,['+',1.5,['*',5.5,RS]],17,['+',2.5,['*',9,RS]]],'circle-color':'#1A1A1A','circle-stroke-width':['interpolate',['linear'],['zoom'],11,0.4,14,0.8,17,1.2],'circle-stroke-color':'#fff','circle-opacity':0.95}},'rs');
+ _odOn('mouseenter','odfSta',()=>map.getCanvas().style.cursor='pointer');_odOn('mouseleave','odfSta',()=>{map.getCanvas().style.cursor='';tip(0);});
+ _odOn('mousemove','odfSta',e=>{let p=e.features[0].properties;tip((p.m==1?'MRT ':'巴士 ')+p.c+' · 工作日客流 '+p.r);});}
+// 0924 memory: every GeoJSON source lives in the single MapLibre worker. Heavy layers (OD lines, 3D extrusions) are removed when left
+// (release-on-leave) and, right after such a release, heavy setData calls wait for the map to go idle (max 1.5 s) so old and new indexes never coexist.
+const EMPTYFC={type:'FeatureCollection',features:[]};
+let _dropPend=false,_hvQ=[],_hvTok=0,_netNext=null,_arcMv=false;const _odEv={};
+function heavyLater(fn){_hvQ.push(fn);if(_hvQ.length>1)return;var tok=++_hvTok,done=false;var run=function(){if(done||tok!==_hvTok)return;done=true;_dropPend=false;var q=_hvQ;_hvQ=[];q.forEach(function(f){try{f();}catch(e){console.error(e);}});};setTimeout(function(){map.once('idle',run);setTimeout(run,1500);},0);}
+function netData(fc){var s=map.getSource('net');if(!_dropPend){_netNext=null;s.setData(fc);return;}var first=!_netNext;_netNext=fc;s.setData(EMPTYFC);if(first)heavyLater(function(){if(_netNext){var _n=_netNext;_netNext=null;map.getSource('net').setData(_n);}});}
+function dropOD(){var hit=false;['odfBld','odf','odfSta'].forEach(function(L){if(map.getLayer(L)){map.removeLayer(L);hit=true;}if(map.getSource(L))map.removeSource(L);});if(hit){_dropPend=true;heavyLater(function(){});}}
+function drop3D(){var hit=false;[['b3d','b3d'],['a3dTop','a3d'],['a3dCol','a3dcol'],['l3d','l3d']].forEach(function(p){if(map.getLayer(p[0])){map.removeLayer(p[0]);hit=true;}if(map.getSource(p[1]))map.removeSource(p[1]);});l3dReady=false;if(hit){_dropPend=true;heavyLater(function(){});}}
+function _odOn(t,l,f){if(_odEv[t])return;_odEv[t]=1;map.on(t,l,f);}
+function odShow(on){if(!on){dropOD();return;}var go=function(){if(colorMode!=='od')return;ensureOD();['odfBld','odf','odfSta'].forEach(function(L){map.setLayoutProperty(L,'visibility','visible');});};if(_dropPend)heavyLater(go);else go();}
+function redrawNet(){odShow(colorMode==='od');if(colorMode==='none'){map.setLayoutProperty('net','visibility','none');if(map.getLayer('netfac'))map.setLayoutProperty('netfac','visibility','none');updLeg();return;}
  map.setLayoutProperty('net','visibility','visible');var ss=facMode==='all'?null:[0];var hi=(facMode==='hi'||facMode==='hiM');var hiM=facMode==='hiM';
- if(colorMode==='flow'){map.getSource('net').setData(binFC('flow',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':['match',['get','b'],0,FLC[0],1,FLC[1],2,FLC[2],3,FLC[3],4,FLC[4],5,FLC[5],'#888']);map.setPaintProperty('net','line-width',hi?LWHALF:LWFULL);}
- else if(colorMode==='plain'){map.getSource('net').setData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#8c8c8c');map.setPaintProperty('net','line-width',LWHALF);}
- else{map.getSource('net').setData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':['match',['get','b'],0,SHC[0],1,SHC[1],2,SHC[2],3,SHC[3],4,SHC[4],5,SHC[5],6,SHC[6],7,SHC[7],'#888']);map.setPaintProperty('net','line-width',hi?LWHALF:LWFULL);}
+ if(colorMode==='flow'){netData(binFC('flow',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':['match',['get','b'],0,FLC[0],1,FLC[1],2,FLC[2],3,FLC[3],4,FLC[4],5,FLC[5],'#888']);map.setPaintProperty('net','line-width',hi?LWHALF:LWFULL);}
+ else if(colorMode==='od'){netData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#d6d4cd');map.setPaintProperty('net','line-width',LWHALF);}
+ else if(colorMode==='plain'){netData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':'#8c8c8c');map.setPaintProperty('net','line-width',LWHALF);}
+ else{netData(binFC('shade',ss));map.setPaintProperty('net','line-color',hi?'#b3bcc4':['match',['get','b'],0,SHC[0],1,SHC[1],2,SHC[2],3,SHC[3],4,SHC[4],5,SHC[5],6,SHC[6],7,SHC[7],'#888']);map.setPaintProperty('net','line-width',hi?LWHALF:LWFULL);}
  if(hi){ensureFac();map.setLayoutProperty('netfac','visibility','visible');map.setPaintProperty('netfac','line-color',hiM?'#d6336c':['match',['get','g'],0,'#d6336c',1,'#2b6cb0',2,'#9b59b6',3,'#12a5b0',4,'#e07b2a','#888']);}else if(map.getLayer('netfac'))map.setLayoutProperty('netfac','visibility','none');
  updLeg();
  if(facMode==='orig')tip('已切到「仅原始人行道」,隐藏了设施小微网');else if(hiM)tip('已切到「统一高亮」,设施统一洋红');else if(facMode==='hi')tip('已切到「分类高亮」:红=骑楼 蓝=连廊 青=过街天桥 橙=楼宇连廊 紫=接入桥');else tip('已切到「全部路网」');}
@@ -417,14 +458,21 @@ function polyFC(rings){return {type:'FeatureCollection',features:rings.map(r=>({
 // 3D bird-view: height FeatureCollections + tree octagon-prisms + view toggle/layers
 function polyHFC(rings,H){return {type:'FeatureCollection',features:rings.map((r,i)=>({type:'Feature',properties:{h:(H&&H[i])||10},geometry:{type:'Polygon',coordinates:r.map(ringLL)}}))};}
 function arcHFC(rings,BH){return {type:'FeatureCollection',features:rings.map((r,i)=>({type:'Feature',properties:{bh:(BH&&BH[i])||6},geometry:{type:'Polygon',coordinates:r.map(ringLL)}}))};}
-function arcColFC(){var f=[],R=0.15,STEP=4.5,N=8;  // arcade colonnade: 0.3m-dia cylinder (octagon) every 4.5m along ring edges (0-3.6m)
- (D.arc||[]).forEach(function(rings){var ext=rings[0];if(!ext||ext.length<6)return;var acc=0;
+let _arcBB=null;const ARCCOL_MAX=25000;
+function viewBBm(pad){var b=map.getBounds();function mx(l){return l/180*Math.PI*Rm-OX;}function my(a){return Rm*Math.log(Math.tan(Math.PI/4+a/180*Math.PI/2))-OY;}return [mx(b.getWest())-pad,my(b.getSouth())-pad,mx(b.getEast())+pad,my(b.getNorth())+pad];}
+function arcColFC(bb){var f=[],R=0.15,STEP=4.5,N=8;if(!bb)return {type:'FeatureCollection',features:f};  // arcade colonnade: 0.3m-dia cylinder (octagon) every 4.5m along ring edges (0-3.6m); 0924: only arcades in the view box, nearest first, <= ARCCOL_MAX columns
+ if(!_arcBB)_arcBB=(D.arc||[]).map(function(r){var e=r[0]||[],a=1e18,b=1e18,c=-1e18,d=-1e18;for(var j=0;j<e.length;j+=2){if(e[j]<a)a=e[j];if(e[j]>c)c=e[j];if(e[j+1]<b)b=e[j+1];if(e[j+1]>d)d=e[j+1];}return [a,b,c,d];});
+ var cx=(bb[0]+bb[2])/2,cy=(bb[1]+bb[3])/2,idx=[];
+ _arcBB.forEach(function(q,i){if(q[2]>=bb[0]&&q[0]<=bb[2]&&q[3]>=bb[1]&&q[1]<=bb[3])idx.push([i,Math.hypot((q[0]+q[2])/2-cx,(q[1]+q[3])/2-cy)]);});
+ idx.sort(function(a,b){return a[1]-b[1];});
+ for(var n=0;n<idx.length&&f.length<ARCCOL_MAX;n++){var ext=D.arc[idx[n][0]][0];if(!ext||ext.length<6)continue;var acc=0;
    for(var j=0;j<ext.length-2;j+=2){var x1=ext[j],y1=ext[j+1],x2=ext[j+2],y2=ext[j+3],dx=x2-x1,dy=y2-y1,seg=Math.hypot(dx,dy);if(seg<0.1)continue;
      for(var d=(STEP-acc%STEP)%STEP;d<seg;d+=STEP){var t=d/seg,c=ll(x1+dx*t,y1+dy*t),mLat=111320,mLng=111320*Math.cos(c[1]*Math.PI/180),ring=[];
        for(var k=0;k<=N;k++){var a=k/N*2*Math.PI;ring.push([c[0]+R*Math.cos(a)/mLng,c[1]+R*Math.sin(a)/mLat]);}
        f.push({type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[ring]}});}
-     acc+=seg;}});
+     acc+=seg;}}
  return {type:'FeatureCollection',features:f};}
+function arcColUpd(){var s=map.getSource('a3dcol');if(!s)return;s.setData((view3d&&arcCol&&map.getZoom()>=15)?arcColFC(viewBBm(60)):EMPTYFC);}
 function treePolyFC(){var GH={0:5,1:9,2:14,3:18},GR={0:2.0,1:3.2,2:5.0,3:7.0},N=8,T=D.tree3d,f=[];if(!T||!T.x)return{type:'FeatureCollection',features:f};
  for(var i=0;i<T.x.length;i++){var c=ll(T.x[i],T.y[i]),h=T.h[i]||GH[T.g[i]],r=GR[T.g[i]]||3,mLat=111320,mLng=111320*Math.cos(c[1]*Math.PI/180),ring=[];
   for(var k=0;k<=N;k++){var a=k/N*2*Math.PI;ring.push([c[0]+r*Math.cos(a)/mLng,c[1]+r*Math.sin(a)/mLat]);}
@@ -436,7 +484,7 @@ function ensure3DLayers(){if(l3dReady)return;l3dReady=true;
  map.addLayer({id:'b3d',type:'fill-extrusion',source:'b3d',minzoom:12,paint:{'fill-extrusion-color':['interpolate',['linear'],['get','h'],0,'#cbc9c2',20,'#adaba4',60,'#8f8d88'],'fill-extrusion-height':['get','h'],'fill-extrusion-base':0,'fill-extrusion-opacity':0.32}},'net');
  map.addSource('a3d',{type:'geojson',data:arcHFC(D.arc,D.arcBH)});
  map.addLayer({id:'a3dTop',type:'fill-extrusion',source:'a3d',minzoom:12,paint:{'fill-extrusion-color':'#c0603a','fill-extrusion-base':3.6,'fill-extrusion-height':['max',['get','bh'],4.2],'fill-extrusion-opacity':0.92}},'net');
- map.addSource('a3dcol',{type:'geojson',data:arcColFC()});
+ map.addSource('a3dcol',{type:'geojson',data:EMPTYFC});if(!_arcMv){_arcMv=true;map.on('moveend',arcColUpd);}setTimeout(arcColUpd,0);
  map.addLayer({id:'a3dCol',type:'fill-extrusion',source:'a3dcol',minzoom:14,layout:{visibility:'none'},paint:{'fill-extrusion-color':'#9a5238','fill-extrusion-height':3.6,'fill-extrusion-base':0,'fill-extrusion-opacity':1}},'net');
  map.addSource('l3d',{type:'geojson',data:polyFC(D.lkw)});
  map.addLayer({id:'l3d',type:'fill-extrusion',source:'l3d',minzoom:12,paint:{'fill-extrusion-color':'#3b7fb0','fill-extrusion-base':3.0,'fill-extrusion-height':3.3,'fill-extrusion-opacity':0.8}},'net');}
@@ -446,7 +494,7 @@ function toggle3D(){if(view3d){ensure3DLayers();set3DVis(true);map.easeTo({pitch
   if(map.getLayer('itree'))map.setLayoutProperty('itree','visibility','none');
   if(document.getElementById('ly3DTree').checked){ensureTree3js();tree3dVis=true;map.triggerRepaint();}
   tip('3D 鸟瞰:拖拽旋转、右键调俯仰;半透明楼 + 骑楼架空体 + 连廊挑板(勾「3D 树木」看真树)');}
- else{set3DVis(false);tree3dVis=false;map.triggerRepaint();map.easeTo({pitch:0,bearing:0,duration:600});map.dragRotate.disable();
+ else{drop3D();tree3dVis=false;map.triggerRepaint();map.easeTo({pitch:0,bearing:0,duration:600});map.dragRotate.disable();
   [['vbld','lyBld'],['varc','lyArc'],['vlkw','lyLkw']].forEach(a=>{if(map.getLayer(a[0]))map.setLayoutProperty(a[0],'visibility',document.getElementById(a[1]).checked?'visible':'none');});
   if(map.getLayer('itree'))map.setLayoutProperty('itree','visibility',document.getElementById('lyTree').checked?'visible':'none');
   tip('已切回 2D 平面');}}
@@ -562,7 +610,7 @@ let staFC=null,bldPtFC=null;
 function staGeo(){if(!staFC){let f=[];for(let i=0;i<D.stx.length;i++)f.push({type:'Feature',properties:{c:D.stc[i],m:D.sts[i],r:D.srid[i]},geometry:{type:'Point',coordinates:ll(D.stx[i],D.sty[i])}});staFC={type:'FeatureCollection',features:f};}return staFC;}
 function bldPtGeo(){if(!bldPtFC){let f=[];for(let i=0;i<D.bcx.length;i++)f.push({type:'Feature',properties:{},geometry:{type:'Point',coordinates:ll(D.bcx[i],D.bcy[i])}});bldPtFC={type:'FeatureCollection',features:f};}return bldPtFC;}
 document.getElementById('lyStaPt').onchange=function(){toggle('lyStaPt','odSta',()=>{map.addSource('odSta',{type:'geojson',data:staGeo()});
- map.addLayer({id:'odSta',type:'circle',source:'odSta',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],11,['case',['==',['get','m'],1],3,1.2],14,['case',['==',['get','m'],1],6,2.6],17,['case',['==',['get','m'],1],9,5]],'circle-color':['case',['==',['get','m'],1],'#f39c12','#1f78b4'],'circle-stroke-width':1,'circle-stroke-color':'#fff','circle-opacity':0.92}},'rs');});};
+ map.addLayer({id:'odSta',type:'circle',source:'odSta',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],11,['case',['==',['get','m'],1],3,1.2],14,['case',['==',['get','m'],1],6,2.6],17,['case',['==',['get','m'],1],9,5]],'circle-color':'#f39c12'  /* 0914: MRT and bus stations share one colour; size (radius) still distinguishes them */,'circle-stroke-width':1,'circle-stroke-color':'#fff','circle-opacity':0.92}},'rs');});};
 document.getElementById('lyBldPt').onchange=function(){toggle('lyBldPt','odBld',()=>{map.addSource('odBld',{type:'geojson',data:bldPtGeo()});
  map.addLayer({id:'odBld',type:'circle',source:'odBld',minzoom:14,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],14,1.5,17,3.2],'circle-color':'#6a51a3','circle-opacity':0.8,'circle-stroke-width':0.5,'circle-stroke-color':'#fff'}},'rs');});};
 ['odSta','odBld'].forEach(L=>{map.on('mouseenter',L,()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave',L,()=>{map.getCanvas().style.cursor='';});});
@@ -571,7 +619,7 @@ map.on('mouseleave','odSta',()=>tip(0));
 function pick(g,ids){ids.forEach(i=>document.getElementById(i).classList.remove('on'));g.classList.add('on');}
 document.getElementById('v3d').onclick=function(){view3d=true;pick(this,['v2d','v3d']);toggle3D();};
 document.getElementById('v2d').onclick=function(){view3d=false;pick(this,['v2d','v3d']);toggle3D();};
-document.getElementById('aCol').onclick=function(){arcCol=!arcCol;this.classList.toggle('on',arcCol);if(view3d){ensure3DLayers();map.setLayoutProperty('a3dCol','visibility',arcCol?'visible':'none');}if(typeof POV!=='undefined'&&POV.C&&POV.C.path&&document.getElementById('pov').style.display!=='none')povBuild();tip(arcCol?'骑楼柱子:开(鸟瞰 + 行人视角骑楼下都显柱)':'骑楼柱子:关(悬浮体,底层透空)');};
+document.getElementById('aCol').onclick=function(){arcCol=!arcCol;this.classList.toggle('on',arcCol);if(view3d){ensure3DLayers();map.setLayoutProperty('a3dCol','visibility',arcCol?'visible':'none');arcColUpd();}if(typeof POV!=='undefined'&&POV.C&&POV.C.path&&document.getElementById('pov').style.display!=='none')povBuild();tip(arcCol?'骑楼柱子:开(鸟瞰 + 行人视角骑楼下都显柱)':'骑楼柱子:关(悬浮体,底层透空)');};
 // sun shadow: hourly SOLWEIG shade raster on ground + directional light on extrusions, follows hr slider
 function sunAltAz(hour){var DOY=60,lat=1.35*Math.PI/180,lon=103.8,tz=8,hh=hour-0.5;  // NOAA solar position; SOLWEIG date 2026-03-01(DOY 60), Singapore 1.35N/103.8E UTC+8; hh=hour-0.5 = SOLWEIG half-step (band15=14:00 -> sun at 13:30)
  var g=2*Math.PI/365*(DOY-1+(hh-12)/24);
@@ -587,11 +635,12 @@ document.getElementById('bSun').onclick=function(){if(!view3d){tip('请先切到
   ensureTree3js();if(sunShadow&&_treeLayer.rebuildView)_treeLayer.rebuildView();if(_treeLayer.setSun)_treeLayer.setSun(D.hours[hidx()]);if(_treeLayer.applyShadow)_treeLayer.applyShadow();updateSunLight();map.triggerRepaint();
   tip(sunShadow?'太阳阴影:three.js 真实投射(视野内建筑/骑楼/树,随时刻),缩放到街区看,拖时刻滑杆影子转':'太阳阴影已关');};
 // north-reset now via the compass control (bottom-right, above the scale bar; click compass to reset north)
-document.getElementById('cShade').onclick=function(){colorMode='shade';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();cleanView();tip('已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
-document.getElementById('cFlow').onclick=function(){colorMode='flow';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();cleanView();tip('已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
-document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();};
-document.getElementById('cNone').onclick=function(){colorMode='none';pick(this,['cShade','cFlow','cPlain','cNone']);redrawNet();};
-document.getElementById('fkCool').onclick=function(){flowKind='cool';pick(this,['fkCool','fkShort']);if(colorMode==='flow')redrawNet();};   // 2026-09-17 shortest route mapping toggle
+document.getElementById('cShade').onclick=function(){colorMode='shade';pick(this,['cShade','cFlow','cOD','cPlain','cNone']);cleanView();redrawNet();tip('已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
+document.getElementById('cFlow').onclick=function(){colorMode='flow';pick(this,['cShade','cFlow','cOD','cPlain','cNone']);cleanView();redrawNet();tip('已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
+document.getElementById('cOD').onclick=function(){colorMode='od';pick(this,['cShade','cFlow','cOD','cPlain','cNone']);cleanView();redrawNet();tip('OD 流量:14:00 站点→建筑 OD 对(Huff 模型分配人数,对数色标:浅黄=少,深紫=多;线宽随人数增大),黑点=站点(大小=客流),线终点=建筑几何中心(灰点,放大到街区显示;同一路网节点上的多栋建筑按权重拆分) · 已自动干净展示:Simple 底图 · 2D · 关太阳阴影 · Routes Hide(均可手动改回)');};
+document.getElementById('cPlain').onclick=function(){colorMode='plain';pick(this,['cShade','cFlow','cOD','cPlain','cNone']);redrawNet();};
+document.getElementById('cNone').onclick=function(){colorMode='none';pick(this,['cShade','cFlow','cOD','cPlain','cNone']);redrawNet();};
+document.getElementById('fkCool').onclick=function(){flowKind='cool';pick(this,['fkCool','fkShort']);if(colorMode==='flow')redrawNet();};   // 0917 shortest route mapping toggle
 document.getElementById('fkShort').onclick=function(){flowKind='short';pick(this,['fkCool','fkShort']);if(colorMode==='flow')redrawNet();};
 document.getElementById('fAll').onclick=function(){facMode='all';pick(this,['fAll','fOrig','fHi','fHiM']);ensureNetVisible();redrawNet();};
 document.getElementById('fOrig').onclick=function(){facMode='orig';pick(this,['fAll','fOrig','fHi','fHiM']);ensureNetVisible();redrawNet();};
@@ -606,8 +655,16 @@ function cleanView(){ // one-click clean display for network/facility layers: cl
  if(view3d){view3d=false;pick(document.getElementById('v2d'),['v2d','v3d']);toggle3D();}
  if(sunShadow){sunShadow=false;document.getElementById('bSun').classList.remove('on');if(_treeLayer.applyShadow)_treeLayer.applyShadow();updateSunLight();map.triggerRepaint();}
  setRM('hide',document.getElementById('rHide'));}
-function ensureNetVisible(){if(colorMode==='none'){colorMode='plain';pick(document.getElementById('cPlain'),['cShade','cFlow','cPlain','cNone']);}}  // facility tabs need the net layer pipeline: Hide -> auto-switch to Plain
+function ensureNetVisible(){if(colorMode==='none'){colorMode='plain';pick(document.getElementById('cPlain'),['cShade','cFlow','cOD','cPlain','cNone']);}}  // facility tabs need the net layer pipeline: Hide -> auto-switch to Plain
 document.getElementById('bmOne').onclick=function(){setBM('onemap',this);};document.getElementById('bmOsm').onclick=function(){setBM('osm',this);};document.getElementById('bmGray').onclick=function(){setBM('gray',this);};document.getElementById('bmGsat').onclick=function(){setBM('gsat',this);};document.getElementById('bmNone').onclick=function(){setBM('none',this);};
+// 1005 Subzone overlay: URA Master Plan 2019 subzone boundaries (indigo dashes on a white casing, above the network, below routes) + names (zoom >= 12); D.subz in page metres, layers built on first use
+let subzOn=false;
+function subzFC(){var S=D.subz,f=[];for(var i=0;i<S.n.length;i++)f.push({type:'Feature',properties:{n:S.n[i],p:S.p[i]},geometry:{type:'MultiPolygon',coordinates:S.g[i].map(function(q){return q.map(ringLL);})}});return {type:'FeatureCollection',features:f};}
+function subzLabFC(){var S=D.subz,f=[];for(var i=0;i<S.n.length;i++)f.push({type:'Feature',properties:{n:S.n[i]},geometry:{type:'Point',coordinates:ll(S.lx[i],S.ly[i])}});return {type:'FeatureCollection',features:f};}
+function subzShow(on){if(on&&!map.getLayer('subzLine')){map.addSource('subz',{type:'geojson',data:subzFC()});map.addLayer({id:'subzCase',type:'line',source:'subz',layout:{'line-join':'round'},paint:{'line-color':'#ffffff','line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],11,2.4,14,3.4,17,5.0]}},'rs');map.addLayer({id:'subzLine',type:'line',source:'subz',layout:{'line-join':'round'},paint:{'line-color':'#43386b','line-opacity':0.9,'line-width':['interpolate',['linear'],['zoom'],11,1.0,14,1.5,17,2.3],'line-dasharray':[2.5,1.5]}},'rs');
+  map.addSource('subzLab',{type:'geojson',data:subzLabFC()});map.addLayer({id:'subzLab',type:'symbol',source:'subzLab',minzoom:12,layout:{'text-field':['get','n'],'text-font':['Noto Sans Regular'],'text-size':['interpolate',['linear'],['zoom'],12,9,15,12,17,14],'text-letter-spacing':0.05,'text-max-width':8},paint:{'text-color':'#2f2f35','text-halo-color':'#ffffff','text-halo-width':1.4,'text-opacity':0.9}},'rs');}
+ ['subzCase','subzLine','subzLab'].forEach(function(L){if(map.getLayer(L))map.setLayoutProperty(L,'visibility',on?'visible':'none');});}
+document.getElementById('bmSubz').onclick=function(){subzOn=!subzOn;this.classList.toggle('on',subzOn);subzShow(subzOn);tip(subzOn?'Subzone:URA 2019 总体规划 '+D.subz.n.length+' 个分区边界(虚线),放大到 12 级以上显示名称;可与任一底图叠加':'已关闭 Subzone 分区');};
 function tip(t){let e=document.getElementById('tip');if(!t){e.style.display='none';return;}e.textContent=t;e.style.display='block';}
 function odUpd(){let f=[],af=[];
  if(O>=0&&OA){f.push({type:'Feature',properties:{c:'#0F6E56',lab:'O'},geometry:{type:'Point',coordinates:[OA.clng,OA.clat]}});if(OA.acc>0.5)af.push({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[[OA.clng,OA.clat],[OA.flng,OA.flat]]}});}
@@ -627,9 +684,39 @@ function route(){if(O<0||Dst<0)return;tip('计算中…');
   let accNote=acc>0.5?'<div class="card" style="background:#eef1f4"><span class="mut">接入步行 '+Math.round(acc)+' m(灰虚线,从点击点垂直接入最近路段);下列为含接入的总行程。</span></div>':'';
   document.getElementById('results').innerHTML=accNote+'<div class="card cool"><div style="display:flex;justify-content:space-between"><b style="color:#0F6E56">最遮荫路</b><span class="mut">'+mn(cF)+' 分钟</span></div><div class="big" style="color:#0F6E56">'+Math.round(c.shade*100)+'% <span class="mut" style="font-size:12px">遮荫</span></div><div class="mut">'+(cF/1000).toFixed(2)+' km · 日晒 '+Math.round(c.len*(1-c.shade))+' m · '+pathFlow(c)+' ppl</div>'+facLine(c)+'</div>'+
    '<div class="card short"><div style="display:flex;justify-content:space-between"><b style="color:#985316">最短路</b><span class="mut">'+mn(sF)+' 分钟</span></div><div class="big" style="color:#985316">'+Math.round(s.shade*100)+'% <span class="mut" style="font-size:12px">遮荫</span></div><div class="mut">'+(sF/1000).toFixed(2)+' km · 日晒 '+Math.round(s.len*(1-s.shade))+' m · '+pathFlow(s)+' ppl</div>'+facLine(s)+'</div>'+
-   '<div class="card" style="background:#f4f6f4"><span class="mut">避热选最遮荫路:遮荫 +'+Math.round((c.shade-s.shade)*100)+' 个百分点,绕行 '+Math.round((det-1)*100)+'%(多走 '+Math.round(c.len-s.len)+' m)。</span></div>';if(!hadRoute){hadRoute=true;if(colorMode!=='none'){colorMode='none';pick(document.getElementById('cNone'),['cShade','cFlow','cPlain','cNone']);redrawNet();tip('已自动隐藏路网着色以突出 OD 路线(可在 Network view 重新开启)');}}profile(c,s);POV.RC=c;POV.RS=s;if(document.getElementById('pov').style.display!=='none')povBuild();if(topoOpen())topoBuild(true);
+   '<div class="card" style="background:#f4f6f4"><span class="mut">避热选最遮荫路:遮荫 +'+Math.round((c.shade-s.shade)*100)+' 个百分点,绕行 '+Math.round((det-1)*100)+'%(多走 '+Math.round(c.len-s.len)+' m)。</span></div>';if(!hadRoute){hadRoute=true;if(colorMode!=='none'){colorMode='none';pick(document.getElementById('cNone'),['cShade','cFlow','cOD','cPlain','cNone']);redrawNet();tip('已自动隐藏路网着色以突出 OD 路线(可在 Network view 重新开启)');}}profile(c,s);POV.RC=c;POV.RS=s;if(document.getElementById('pov').style.display!=='none')povBuild();if(topoOpen())topoBuild(true);
  },20);}
-map.on('click',e=>{let lng=e.lngLat.lng,lat=e.lngLat.lat,isPt=false;
+// 1014 edge inspector (toggle under Network view): while on, a map click picks the nearest network edge (<= 14 px), highlights it and shows
+// length l_e, shade sigma_e at the Daily time hour (facility scenario applied), rho_e=(1-sigma_e)+lambda, omega_e=l_e*rho_e and the 14:00 flows; clicks do not set O/D
+const INSPT={btnOn:'查看路段:点击路网中的任一路段,显示长度、遮荫率 σₑ、边权 ωₑ 与人流;开启期间点击不设置起终点',btnOff:'已关闭查看路段,点击地图恢复设置起终点',none:'附近没有路段,请点得更靠近路段一些',edge:'路段',src:['原始人行道','设施中线(连廊/骑楼)','接入桥'],fac:['日晒','建筑','树木','骑楼','连廊'],facLbl:'主要遮荫:',len:'长度 ℓₑ',sh:'遮荫率 σₑ',rho:'阻力 ρₑ = (1 − σₑ) + λ',w:'边权 ωₑ = ℓₑ · ρₑ',flow:'人流(14:00)',fs:'最短路',fc:'最遮荫路',ppl:' 人',scn:'当前为设施移除场景,σₑ 按移除后计',note:'σₑ 随日间时刻变化;人流为 14:00 预计算结果'};
+let INSPON=false,INSP=-1,INSPLL=null,INSPPOP=null;
+function inspNear(mx,my){var cx=(mx/GC)|0,cy=(my/GC)|0,seen=new Set(),best=-1,bd=1e18;
+ for(var dx=-2;dx<=2;dx++)for(var dy=-2;dy<=2;dy++){var a=grid.get((cx+dx)+'_'+(cy+dy));if(!a)continue;
+  for(const ni of a){for(var q=off[ni];q<off[ni+1];q++){var ei=aE[q];if(seen.has(ei))continue;seen.add(ei);var g=D.egeom[ei];
+   for(var k=0;k+3<g.length;k+=2){var ax=g[k],ay=g[k+1],vx=g[k+2]-ax,vy=g[k+3]-ay,L2=vx*vx+vy*vy,t=L2>0?((mx-ax)*vx+(my-ay)*vy)/L2:0;t=t<0?0:t>1?1:t;var px=ax+t*vx,py=ay+t*vy,d=(mx-px)*(mx-px)+(my-py)*(my-py);if(d<bd){bd=d;best=ei;}}}}}
+ return best<0?null:{ei:best,d:Math.sqrt(bd)};}
+function inspHL(i){var fc={type:'FeatureCollection',features:i<0?[]:[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:edgeLL(D.egeom[i])}}]};
+ if(map.getSource('einsp')){map.getSource('einsp').setData(fc);return;}if(i<0)return;
+ map.addSource('einsp',{type:'geojson',data:fc});
+ map.addLayer({id:'einspC',type:'line',source:'einsp',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['interpolate',['linear'],['zoom'],12,6,17,13]}},'rs');
+ map.addLayer({id:'einsp',type:'line',source:'einsp',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#0091d5','line-width':['interpolate',['linear'],['zoom'],12,3,17,7]}},'rs');}
+function coolFlowArr(){var k=flowKind;flowKind='cool';var a=flowCur();flowKind=k;return a;}
+function inspCard(){if(INSP<0||!INSPLL)return;var T=INSPT,i=INSP,L=EL[i],s=esf(i)/100,lam=(typeof PLAM!=='undefined')?PLAM:LAM,rho=(1-s)+lam,w=L*rho,cf=coolFlowArr(),F=function(n){return Math.round(n||0).toLocaleString('en-US');};
+ var cl=(typeof PLAM!=='undefined')?'λ='+PLAM:'τ='+DETOUR+'×',row=function(a,b){return '<tr><td style="color:#666;padding:1px 12px 1px 0">'+a+'</td><td style="text-align:right;font-weight:600;white-space:nowrap">'+b+'</td></tr>';};
+ var h='<div style="font-size:12px;line-height:1.45;min-width:240px"><div style="font-weight:600">'+T.edge+' #'+i+'</div><div style="color:#777;font-size:11px;margin-bottom:4px">'+(T.src[ESRCC[i]]||'-')+' · '+T.facLbl+(T.fac[EFACC[i]]||'-')+'</div><table style="border-collapse:collapse;width:100%">'
+  +row(T.len,L+' m')+row(T.sh+' ('+D.hours[HRI]+':00)',Math.round(s*100)+'%')+row(T.rho+' (λ='+lam+')',rho.toFixed(3))+row(T.w,w.toFixed(1)+' m')
+  +'<tr><td colspan="2" style="padding-top:5px;font-weight:600">'+T.flow+'</td></tr>'+row(T.fs,F(EF[i])+T.ppl)+row(T.fc+' ('+cl+')',F(cf[i])+T.ppl)+'</table>'
+  +((typeof SCN!=='undefined'&&(!SCN.arc||!SCN.lkw))?'<div style="color:#b3261e;font-size:10.5px;margin-top:3px">'+T.scn+'</div>':'')
+  +'<div style="color:#999;font-size:10.5px;margin-top:3px">'+T.note+'</div></div>';
+ if(!INSPPOP){INSPPOP=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'340px'});INSPPOP.on('close',function(){INSP=-1;inspHL(-1);});}
+ INSPPOP.setLngLat(INSPLL).setHTML(h);if(!INSPPOP.isOpen())INSPPOP.addTo(map);}
+function inspAt(ll){var mx=ll.lng/180*Math.PI*Rm-OX,my=Rm*Math.log(Math.tan(Math.PI/4+ll.lat/180*Math.PI/2))-OY,r=inspNear(mx,my),tol=Math.max(3,14*40075016.686/(512*Math.pow(2,map.getZoom())));
+ if(!r||r.d>tol){tip(INSPT.none);return;}INSP=r.ei;INSPLL=ll;inspHL(INSP);inspCard();tip(0);}
+function inspClear(){if(INSPPOP&&INSPPOP.isOpen())INSPPOP.remove();INSP=-1;inspHL(-1);}
+document.getElementById('eInsp').onclick=function(){INSPON=!INSPON;this.classList.toggle('on',INSPON);map.getCanvas().style.cursor=INSPON?'crosshair':'';if(!INSPON){inspClear();tip(INSPT.btnOff);}else tip(INSPT.btnOn);};
+['hr','detTh'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',function(){if(INSP>=0)setTimeout(inspCard,0);});});
+['lyArc','lyLkw'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('change',function(){if(INSP>=0)setTimeout(inspCard,0);});});
+map.on('click',e=>{if(INSPON){inspAt(e.lngLat);return;}let lng=e.lngLat.lng,lat=e.lngLat.lat,isPt=false;
  let ql=['odSta','odBld'].filter(l=>map.getLayer(l));
  if(ql.length){let qf=map.queryRenderedFeatures(e.point,{layers:ql});if(qf.length&&qf[0].geometry.type==='Point'){let c=qf[0].geometry.coordinates;lng=c[0];lat=c[1];isPt=true;}}
  let mx=lng/180*Math.PI*Rm-OX, my=Rm*Math.log(Math.tan(Math.PI/4+lat/180*Math.PI/2))-OY,snap;
@@ -863,11 +950,12 @@ document.getElementById('bDemo').onclick=()=>{var pr=demoPair();if(!pr){tip('没
 document.getElementById('bSwap').onclick=()=>{if(O<0||Dst<0)return;let t=O;O=Dst;Dst=t;let ta=OA;OA=DA;DA=ta;odUpd();document.getElementById('oTxt').textContent='起点:已选';document.getElementById('dTxt').textContent='终点:已选';route();};
 let demoI={};
 function snapPt(lng,lat){let mx=lng/180*Math.PI*Rm-OX,my=Rm*Math.log(Math.tan(Math.PI/4+lat/180*Math.PI/2))-OY;let se=snapEdge(mx,my);if(se)return {node:se.node,clng:lng,clat:lat,flng:se.flng,flat:se.flat,acc:se.acc};let n=nearest(mx,my);if(n<0)return null;let nl=ll(D.nx[n],D.ny[n]);return {node:n,clng:lng,clat:lat,flng:nl[0],flat:nl[1],acc:haversine([lng,lat],nl)};}
-function setDemo(scene,nm){let arr=(D.demoOD||{})[scene];if(!arr||!arr.length){tip('该场景暂无示例');return;}let i=(demoI[scene]||0)%arr.length;demoI[scene]=i+1;let p=arr[i];let oa=snapPt(p[0],p[1]),da=snapPt(p[2],p[3]);if(!oa||!da)return;O=oa.node;OA=oa;Dst=da.node;DA=da;document.getElementById('oTxt').textContent='起点:'+nm+' ('+(i+1)+'/'+arr.length+')';document.getElementById('dTxt').textContent='终点:'+nm.split('→')[1];odUpd();FITRT=true;route();}
-document.getElementById('dmHt').onclick=()=>setDemo('hdb_transit','组屋→公交');
-document.getElementById('dmOt').onclick=()=>setDemo('office_transit','办公→公交');
-document.getElementById('dmOf').onclick=()=>setDemo('office_food','办公→餐饮');
-document.getElementById('dmHm').onclick=()=>setDemo('hdb_mart','组屋→商超');
+function setDemo(scene,nm){let arr=(D.demoOD||{})[scene];if(!arr||!arr.length){tip('该场景暂无示例');return;}let i=(demoI[scene]||0)%arr.length;demoI[scene]=i+1;let p=arr[i];let oa=snapPt(p[0],p[1]),da=snapPt(p[2],p[3]);if(!oa||!da)return;O=oa.node;OA=oa;Dst=da.node;DA=da;document.getElementById('oTxt').textContent='起点:'+nm.split('→')[0]+' ('+(i+1)+'/'+arr.length+')';document.getElementById('dTxt').textContent='终点:'+nm.split('→')[1];odUpd();FITRT=true;route();}
+const DMN={hdb:'组屋',office:'办公',transit:'公交',dining:'餐饮',store:'商超'};  // 0923 demo dropdowns: origin type x destination type (25 combos x 5 pairs from _demo_scenarios_od25.json: <= 1 mile, Shortest and Coolest share <= 60% of the length)
+function dmGo(){let o=document.getElementById('dmO').value,d=document.getElementById('dmD').value;if(!o||!d)return false;setDemo(o+'_'+d,DMN[o]+'→'+DMN[d]);return true;}
+document.getElementById('dmO').onchange=dmGo;document.getElementById('dmD').onchange=dmGo;
+document.getElementById('dmNext').onclick=()=>{if(!dmGo())tip('请先选择起点和终点类型');};
+document.getElementById('bClear').addEventListener('click',()=>{document.getElementById('dmO').value='';document.getElementById('dmD').value='';});
 function svList(){try{return JSON.parse(localStorage.getItem('svDemo')||'[]')}catch(e){return [];}}
 let importedOD=[];
 function poolList(){return svList().concat(((D.demoOD||{}).my_saved)||[]).concat(importedOD);}
@@ -880,7 +968,10 @@ document.getElementById('dmClear').onclick=()=>{var a=svList();if(!a.length){tip
 document.getElementById('dmImport').onclick=()=>document.getElementById('dmFile').click();
 document.getElementById('dmFile').onchange=(e)=>{var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=()=>{try{var d=JSON.parse(r.result);var arr=Array.isArray(d)?d:((d&&typeof d==='object')?Object.keys(d).reduce(function(x,k){return x.concat(Array.isArray(d[k])?d[k]:[]);},[]):null);if(!arr){tip('导入失败:需 OD 数组或场景对象 json');return;}arr=arr.filter(function(p){return Array.isArray(p)&&p.length>=4&&typeof p[0]==='number'&&typeof p[3]==='number';});if(!arr.length){tip('导入失败:没有有效 OD');return;}importedOD=arr;myI=svList().length+((((D.demoOD||{}).my_saved)||[]).length);svUpd();tip('已导入 '+arr.length+' 条(临时,不入收藏)');document.getElementById('dmMine').click();}catch(ex){tip('JSON 解析失败');}e.target.value='';};r.readAsText(f);};
 svUpd();
-function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){let _e=[0,13,25,38,50,63,75,88,100],_bar='',_tk='';for(let b=0;b<8;b++)_bar+='<span style="width:15px;height:10px;display:inline-block;background:'+SHC[b]+'"></span>';for(let _i=0;_i<_e.length;_i++)_tk+='<span>'+_e[_i]+(_i===_e.length-1?'%':'')+'</span>';l.innerHTML='<b style="font-weight:500">'+D.hours[HRI]+':00 路段遮荫率(蓝=遮荫,红=日晒)</b><div style="display:flex;margin-top:3px">'+_bar+'</div><div style="display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div>';}else if(colorMode==='flow')l.innerHTML='<b style="font-weight:500">'+(facMode==='orig'?'步行人流量(原始网络)':flowKind==='short'?'步行人流量(最短路径,不随 τ/λ)':'步行人流量(避热 τ='+DETOUR+'×)')+'</b><br><span class="sw" style="background:#7a3d18"></span>高 &nbsp;<span class="sw" style="background:#f4cf86"></span>低';else if(colorMode==='plain')l.innerHTML='<b style="font-weight:500">路网(无色)</b><br><span class="sw" style="background:#8c8c8c"></span>路网线';else l.innerHTML='<b style="font-weight:500">路网已隐藏</b>';l.innerHTML+='<br><span class="sw" style="background:#0F9E75"></span>最遮荫路 &nbsp;<span class="sw" style="background:#E0791E"></span>最短路';if(colorMode!=='none'){if(facMode==='hi')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>骑楼 &nbsp;<span class="sw" style="background:#2b6cb0"></span>连廊 &nbsp;<span class="sw" style="background:#12a5b0"></span>过街天桥 &nbsp;<span class="sw" style="background:#e07b2a"></span>楼宇连廊 &nbsp;<span class="sw" style="background:#9b59b6"></span>接入桥';else if(facMode==='hiM')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>人工遮荫设施(连廊/骑楼)';}}
+function updLeg(){let l=document.getElementById('leg');var fb=document.getElementById('fkBox');if(fb)fb.style.display=(colorMode==='flow')?'inline-flex':'none';if(colorMode==='shade'){let _e=[0,13,25,38,50,63,75,88,100],_bar='',_tk='';for(let b=0;b<8;b++)_bar+='<span style="width:15px;height:10px;display:inline-block;background:'+SHC[b]+'"></span>';for(let _i=0;_i<_e.length;_i++)_tk+='<span>'+_e[_i]+(_i===_e.length-1?'%':'')+'</span>';l.innerHTML='<b style="font-weight:500">'+D.hours[HRI]+':00 路段遮荫率(蓝=遮荫,红=日晒)</b><div style="display:flex;margin-top:3px">'+_bar+'</div><div style="display:flex;justify-content:space-between;width:120px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div>';}else if(colorMode==='flow')l.innerHTML='<b style="font-weight:500">'+(facMode==='orig'?'步行人流量(原始网络)':flowKind==='short'?'步行人流量(最短路径,不随 τ/λ)':'步行人流量(避热 τ='+DETOUR+'×)')+'</b><br><span class="sw" style="background:#7a3d18"></span>高 &nbsp;<span class="sw" style="background:#f4cf86"></span>低';else if(colorMode==='od'){let o=D.od,F=n=>Number(n).toLocaleString('en-US'),_tk='';[[0.1,'0.1'],[1,'1'],[10,'10'],[100,'100'],[1000,'1,000']].forEach(p=>{let t=(Math.log10(p[0])+1)/(Math.log10(3000)+1);_tk+='<span style="position:absolute;left:'+(t*100).toFixed(1)+'%;transform:translateX('+(t<0.01?'0':'-50%')+')">'+p[1]+'</span>';});
+ let _w='';[[1,'1'],[30,'30'],[1000,'1,000']].forEach(p=>{let t=Math.log10(p[0])/Math.log10(3000);_w+='<span class="sw" style="width:22px;height:'+(0.4+3.2*t).toFixed(1)+'px;background:'+ODC[odBin(p[0])]+'"></span>'+p[1]+' &nbsp;';});
+ l.innerHTML='<b style="font-weight:500">14:00 站点→建筑 OD 流量(Huff 分配人数)</b><div style="width:160px;height:10px;margin-top:3px;background:linear-gradient(90deg,'+ODG.join(',')+')"></div><div style="position:relative;width:160px;height:11px;font-size:9px;color:#555;margin-top:1px">'+_tk+'</div><div style="font-size:9px;color:#555;margin-top:2px">人/对(对数色标) · 线宽:'+_w+'</div><div style="font-size:10px;margin-top:3px"><span class="sw2" style="background:#1A1A1A;border-radius:50%;width:9px;height:9px;border:1px solid #fff;box-shadow:0 0 0 1px #999"></span> MRT 出口/巴士站(大小=客流) &nbsp;<span class="sw2" style="background:#B8B8B8;border-radius:50%;width:7px;height:7px;border:none"></span> 建筑中心点</div>';}
+ else if(colorMode==='plain')l.innerHTML='<b style="font-weight:500">路网(无色)</b><br><span class="sw" style="background:#8c8c8c"></span>路网线';else l.innerHTML='<b style="font-weight:500">路网已隐藏</b>';l.innerHTML+='<br><span class="sw" style="background:#0F9E75"></span>最遮荫路 &nbsp;<span class="sw" style="background:#E0791E"></span>最短路';if(colorMode!=='none'){if(facMode==='hi')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>骑楼 &nbsp;<span class="sw" style="background:#2b6cb0"></span>连廊 &nbsp;<span class="sw" style="background:#12a5b0"></span>过街天桥 &nbsp;<span class="sw" style="background:#e07b2a"></span>楼宇连廊 &nbsp;<span class="sw" style="background:#9b59b6"></span>接入桥';else if(facMode==='hiM')l.innerHTML+='<br><span class="sw" style="background:#d6336c"></span>人工遮荫设施(连廊/骑楼)';}}
 ;(function(){function foldPanel(id){var p=document.getElementById(id);if(!p)return;var btn=document.getElementById(id+'F');if(!btn)return;var folded=p.getAttribute('data-fold')==='1';var kids=Array.from(p.children);kids.forEach(function(c,i){if(i>0)c.style.display=folded?'':'none';});p.setAttribute('data-fold',folded?'0':'1');btn.textContent=folded?'▾':'▸';}['prof','pov','topo'].forEach(function(id){var b=document.getElementById(id+'F');if(b)b.onclick=function(e){e.stopPropagation();foldPanel(id);};});})();
 </script></body></html>'''
 HTML=HTML.replace('__DATA__',dj)

@@ -31,8 +31,8 @@ W_b * exp(-d(s, b) / 350 m)          Huff competition among the reachable buildi
 ```
 
 Stations and buildings snap to the nearest node of the main connected component of the network within 120 m; pairs
-closer than 20 m are dropped. Each pair is routed twice: shortest path (`sum l_i`) and coolest path
-(`sum l_i x ((1 - sigma_i) + lambda)`, Module 4a); flow on an edge = sum of the demand of all OD pairs whose route uses
+closer than 20 m are dropped. Each pair is routed twice: shortest path (`sum l_e`) and coolest path
+(`sum l_e x ((1 - sigma_e) + lambda)`, Module 4a); flow on an edge = sum of the demand of all OD pairs whose route uses
 the edge. `step4_4f_flow_lam.py` sweeps 18 values of lambda (paper setting 0.2 included); `step4_4e_flow_detour.py`
 is the alternative formulation with a hard detour cap tau.
 
