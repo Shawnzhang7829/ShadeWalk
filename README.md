@@ -71,7 +71,7 @@ refers to the folders above, and the `INPUT_DATA.md` of each module gives the fu
 
 Included: all pipeline code, the modified SOLWEIG-GPU package with a patch against upstream, the covered-linkway
 training annotations (LabelMe polygons, masks, tile grid), the arcade-probe models and their label files, the
-trained covered-linkway checkpoint (27 MB), the English build of the web tool (gzip), and the documentation.
+trained covered-linkway checkpoint (27 MB), the English build of the web tool (password-protected 7z), and the documentation.
 
 Not included (size or licence): raw imagery (Google satellite basemap tiles, Google Street View images), the
 meteorological forcing files and the

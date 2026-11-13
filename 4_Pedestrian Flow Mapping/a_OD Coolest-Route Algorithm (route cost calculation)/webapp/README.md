@@ -18,11 +18,11 @@ which keeps the memory of the page bounded when switching between views.
 
 ## Distributed build
 
-`dist/nav_app_paper_en.html.gz` - the English "paper routing" build (about 143 MB uncompressed; gzip-compressed for the
-repository). Decompress and open it in a modern browser:
+`dist/nav_app_paper_en.html.7z` - the English "paper routing" build (about 143 MB uncompressed; password-protected 7z
+archive (AES-256) for the repository). Extract it with 7-Zip and open it in a modern browser:
 
 ```bash
-gunzip -k "dist/nav_app_paper_en.html.gz"
+7z x "dist/nav_app_paper_en.html.7z"
 ```
 
 The page needs internet access for the MapLibre / three.js libraries and the basemap tiles (Esri World Light Gray Canvas, OpenFreeMap Positron, OneMap
